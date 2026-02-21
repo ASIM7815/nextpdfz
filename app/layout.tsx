@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { Poppins } from 'next/font/google'
 import './globals.css'
 
+// Force fresh build - updated favicon and removed dynamic routes
+
 const poppins = Poppins({ 
   weight: ['400', '500', '600', '700', '800', '900'],
   subsets: ['latin'],
@@ -11,6 +13,10 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   title: 'Free PDF Tools Online - Convert, Merge, Split, Compress PDF | PDFZ',
   description: 'Free online PDF converter and editor. Convert PDF to Word, Excel, PPT. Merge PDF, split PDF, compress PDF, rotate PDF. No watermark, secure, works on mobile. Best free alternative to Adobe Acrobat.',
+  icons: {
+    icon: '/favicon.svg',
+    apple: '/apple-touch-icon.png',
+  },
   keywords: [
     // Conversion tools
     'pdf to word', 'word to pdf', 'pdf to jpg', 'jpg to pdf', 'pdf to excel', 'excel to pdf', 'pdf to ppt', 'ppt to pdf',
