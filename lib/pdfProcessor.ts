@@ -82,7 +82,7 @@ async function mergePDFs(files: File[]): Promise<Blob> {
   }
 
   const pdfBytes = await mergedPdf.save()
-  return new Blob([pdfBytes], { type: 'application/pdf' })
+  return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
 }
 
 async function splitPDF(file: File, options: any): Promise<Blob> {
@@ -101,7 +101,7 @@ async function splitPDF(file: File, options: any): Promise<Blob> {
   }
 
   const pdfBytes = await newPdf.save()
-  return new Blob([pdfBytes], { type: 'application/pdf' })
+  return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
 }
 
 async function compressPDF(file: File, options: any): Promise<Blob> {
@@ -157,7 +157,7 @@ async function compressPDF(file: File, options: any): Promise<Blob> {
     })
   }
   
-  return new Blob([pdfBytes], { type: 'application/pdf' })
+  return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
 }
 
 async function rotatePDF(file: File, options: any): Promise<Blob> {
@@ -173,7 +173,7 @@ async function rotatePDF(file: File, options: any): Promise<Blob> {
   })
 
   const pdfBytes = await pdfDoc.save()
-  return new Blob([pdfBytes], { type: 'application/pdf' })
+  return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
 }
 
 async function watermarkPDF(file: File, options: any): Promise<Blob> {
@@ -210,7 +210,7 @@ async function watermarkPDF(file: File, options: any): Promise<Blob> {
   })
 
   const pdfBytes = await pdfDoc.save()
-  return new Blob([pdfBytes], { type: 'application/pdf' })
+  return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
 }
 
 async function imagesToPDF(files: File[]): Promise<Blob> {
@@ -339,8 +339,8 @@ async function wordToPDF(file: File): Promise<Blob> {
   const textElements = xmlDoc.getElementsByTagName('w:t')
   
   let text = ''
-  for (let elem of textElements) {
-    text += elem.textContent + ' '
+  for (let i = 0; i < textElements.length; i++) {
+    text += textElements[i].textContent + ' '
   }
   
   const { jsPDF } = window.jspdf
@@ -448,7 +448,7 @@ async function pdfToExcel(file: File): Promise<Blob> {
     const textContent = await page.getTextContent()
     const lines = textContent.items.map((item: any) => item.str)
     
-    lines.forEach(line => {
+    lines.forEach((line: string) => {
       if (line.trim()) {
         sheetData += `<row r="${rowIndex}"><c r="A${rowIndex}" t="inlineStr"><is><t>${line}</t></is></c></row>`
         rowIndex++
@@ -492,8 +492,8 @@ async function powerPointToPDF(file: File): Promise<Blob> {
     const textElements = xmlDoc.getElementsByTagName('a:t')
     
     let text = ''
-    for (let elem of textElements) {
-      text += elem.textContent + '\n'
+    for (let i = 0; i < textElements.length; i++) {
+      text += textElements[i].textContent + '\n'
     }
     
     if (!firstPage) pdf.addPage()
@@ -528,11 +528,11 @@ async function excelToPDF(file: File): Promise<Blob> {
   const pdf = new jsPDF()
   
   let y = 20
-  for (let row of rows) {
-    const cells = row.getElementsByTagName('t')
+  for (let i = 0; i < rows.length; i++) {
+    const cells = rows[i].getElementsByTagName('t')
     let rowText = ''
-    for (let cell of cells) {
-      rowText += cell.textContent + ' | '
+    for (let j = 0; j < cells.length; j++) {
+      rowText += cells[j].textContent + ' | '
     }
     
     if (y > 280) {
@@ -563,7 +563,7 @@ async function editPDF(file: File, options: any): Promise<Blob> {
   }
   
   const pdfBytes = await pdfDoc.save()
-  return new Blob([pdfBytes], { type: 'application/pdf' })
+  return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
 }
 
 async function signPDF(file: File, options: any): Promise<Blob> {
@@ -604,7 +604,7 @@ async function signPDF(file: File, options: any): Promise<Blob> {
   })
   
   const pdfBytes = await pdfDoc.save()
-  return new Blob([pdfBytes], { type: 'application/pdf' })
+  return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
 }
 
 async function htmlToPDF(file: File): Promise<Blob> {
@@ -641,7 +641,7 @@ async function unlockPDF(file: File, options: any): Promise<Blob> {
     })
     
     const pdfBytes = await pdfDoc.save()
-    return new Blob([pdfBytes], { type: 'application/pdf' })
+    return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
   } catch (error) {
     throw new Error('Unable to unlock PDF. Password may be required.')
   }
@@ -686,7 +686,7 @@ async function protectPDF(file: File, options: any): Promise<Blob> {
   }
   
   const pdfBytes = await pdfDoc.save()
-  return new Blob([pdfBytes], { type: 'application/pdf' })
+  return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
 }
 
 async function organizePDF(file: File, options: any): Promise<Blob> {
@@ -706,7 +706,7 @@ async function organizePDF(file: File, options: any): Promise<Blob> {
   }
   
   const pdfBytes = await newPdf.save()
-  return new Blob([pdfBytes], { type: 'application/pdf' })
+  return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
 }
 
 async function pdfToPDFA(file: File): Promise<Blob> {
@@ -721,7 +721,7 @@ async function pdfToPDFA(file: File): Promise<Blob> {
     useObjectStreams: false,
   })
   
-  return new Blob([pdfBytes], { type: 'application/pdf' })
+  return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
 }
 
 async function repairPDF(file: File): Promise<Blob> {
@@ -735,7 +735,7 @@ async function repairPDF(file: File): Promise<Blob> {
     })
     
     const pdfBytes = await pdfDoc.save()
-    return new Blob([pdfBytes], { type: 'application/pdf' })
+    return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
   } catch (error) {
     throw new Error('Unable to repair PDF. File may be severely corrupted.')
   }
@@ -749,7 +749,7 @@ async function addPageNumbers(file: File, options: any): Promise<Blob> {
   const pages = pdfDoc.getPages()
   const position = options.numberPosition || 'bottom-center'
   
-  pages.forEach((page, index) => {
+  pages.forEach((page: any, index: number) => {
     const { width, height } = page.getSize()
     const pageNumber = `${index + 1}`
     
@@ -772,7 +772,7 @@ async function addPageNumbers(file: File, options: any): Promise<Blob> {
   })
   
   const pdfBytes = await pdfDoc.save()
-  return new Blob([pdfBytes], { type: 'application/pdf' })
+  return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
 }
 
 async function scanToPDF(files: File[], options: any): Promise<Blob> {
@@ -831,7 +831,7 @@ async function ocrPDF(file: File, options: any): Promise<Blob> {
   }
   
   const pdfBytes = await pdfDoc.save()
-  return new Blob([pdfBytes], { type: 'application/pdf' })
+  return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
 }
 
 async function comparePDFs(files: File[]): Promise<Blob> {
@@ -874,7 +874,7 @@ async function redactPDF(file: File, options: any): Promise<Blob> {
   const pages = pdfDoc.getPages()
   const redactText = options.redactText || ''
   
-  pages.forEach((page) => {
+  pages.forEach((page: any) => {
     const { width, height } = page.getSize()
     
     page.drawRectangle({
@@ -887,7 +887,7 @@ async function redactPDF(file: File, options: any): Promise<Blob> {
   })
   
   const pdfBytes = await pdfDoc.save()
-  return new Blob([pdfBytes], { type: 'application/pdf' })
+  return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
 }
 
 async function cropPDF(file: File, options: any): Promise<Blob> {
@@ -898,13 +898,13 @@ async function cropPDF(file: File, options: any): Promise<Blob> {
   const pages = pdfDoc.getPages()
   const margin = parseInt(options.cropMargin) || 50
   
-  pages.forEach((page) => {
+  pages.forEach((page: any) => {
     const { width, height } = page.getSize()
     page.setCropBox(margin, margin, width - margin * 2, height - margin * 2)
   })
   
   const pdfBytes = await pdfDoc.save()
-  return new Blob([pdfBytes], { type: 'application/pdf' })
+  return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
 }
 
 async function translatePDF(file: File, options: any): Promise<Blob> {
