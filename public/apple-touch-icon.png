@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" width="180" height="180">
+  <rect width="180" height="180" fill="#ff6b6b" rx="25"/>
+  <rect x="45" y="35" width="60" height="75" fill="white" rx="5"/>
+  <rect x="55" y="45" width="40" height="3" fill="#ff6b6b"/>
+  <rect x="55" y="55" width="35" height="3" fill="#ff6b6b"/>
+  <rect x="55" y="65" width="40" height="3" fill="#ff6b6b"/>
+  <rect x="55" y="75" width="30" height="3" fill="#ff6b6b"/>
+  <text x="90" y="145" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="white" text-anchor="middle">PDFZ</text>
+</svg>
