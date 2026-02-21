@@ -1,11 +1,19 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
+
 interface ToolsSectionProps {
-  onToolClick: (tool: string) => void
+  onToolClick?: (tool: string) => void
   searchQuery?: string
 }
 
 export default function ToolsSection({ onToolClick, searchQuery = '' }: ToolsSectionProps) {
+  const router = useRouter()
+  
+  const handleToolClick = (toolId: string) => {
+    router.push(`/tools/${toolId}`)
+  }
+  
   const tools = [
     { id: 'merge', icon: 'fa-object-group', title: 'Merge PDF', desc: 'Combine multiple PDFs into one', iconClass: 'merge' },
     { id: 'split', icon: 'fa-scissors', title: 'Split PDF', desc: 'Extract pages from your PDF', iconClass: 'split' },
@@ -16,7 +24,6 @@ export default function ToolsSection({ onToolClick, searchQuery = '' }: ToolsSec
     { id: 'word-to-pdf', icon: 'fa-file-pdf', title: 'Word to PDF', desc: 'Convert DOCX to PDF', iconClass: 'convert' },
     { id: 'powerpoint-to-pdf', icon: 'fa-file-pdf', title: 'PowerPoint to PDF', desc: 'Convert PPTX to PDF', iconClass: 'convert' },
     { id: 'excel-to-pdf', icon: 'fa-file-pdf', title: 'Excel to PDF', desc: 'Convert XLSX to PDF', iconClass: 'convert' },
-    { id: 'edit', icon: 'fa-edit', title: 'Edit PDF', desc: 'Add text and edit PDF', iconClass: 'edit' },
     { id: 'pdf-to-jpg', icon: 'fa-image', title: 'PDF to JPG', desc: 'Convert PDF pages to images', iconClass: 'convert' },
     { id: 'jpg-to-pdf', icon: 'fa-images', title: 'JPG to PDF', desc: 'Convert images to PDF', iconClass: 'convert' },
     { id: 'rotate', icon: 'fa-sync', title: 'Rotate PDF', desc: 'Rotate pages in your PDF', iconClass: 'rotate' },
@@ -51,7 +58,7 @@ export default function ToolsSection({ onToolClick, searchQuery = '' }: ToolsSec
             <article 
               key={tool.id} 
               className="tool-card" 
-              onClick={() => onToolClick(tool.id)}
+              onClick={() => handleToolClick(tool.id)}
             >
               <div className={`tool-icon ${tool.iconClass}`}>
                 <i className={`fas ${tool.icon}`}></i>

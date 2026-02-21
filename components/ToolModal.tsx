@@ -47,6 +47,17 @@ export default function ToolModal({ currentTool, onClose }: ToolModalProps) {
   if (!currentTool) return null
 
   const config = toolConfig[currentTool]
+  
+  if (!config) {
+    return (
+      <div className={`modal ${currentTool ? 'active' : ''}`} onClick={onClose}>
+        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <button className="close-btn" onClick={onClose}>&times;</button>
+          <p>Tool configuration not found.</p>
+        </div>
+      </div>
+    )
+  }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -129,6 +140,7 @@ export default function ToolModal({ currentTool, onClose }: ToolModalProps) {
     if (currentTool === 'pdf-to-powerpoint') extension = 'pptx'
     if (currentTool === 'pdf-to-excel') extension = 'xlsx'
     if (currentTool === 'compare') extension = 'pdf'
+    if (currentTool === 'quality-report') extension = 'pdf'
     
     a.download = `processed_${currentTool}_${Date.now()}.${extension}`
     document.body.appendChild(a)
