@@ -204,35 +204,33 @@ export default function ToolPage() {
                             <p>{(file.size / 1024).toFixed(2)} KB</p>
                           </div>
                         </div>
-                        {toolId === 'merge' && (
-                          <div className="file-actions">
-                            {idx > 0 && (
-                              <button 
-                                className="btn-move-up" 
-                                onClick={() => moveFile(idx, idx - 1)}
-                                title="Move up"
-                              >
-                                <i className="fas fa-arrow-up"></i>
-                              </button>
-                            )}
-                            {idx < uploadedFiles.length - 1 && (
-                              <button 
-                                className="btn-move-down" 
-                                onClick={() => moveFile(idx, idx + 1)}
-                                title="Move down"
-                              >
-                                <i className="fas fa-arrow-down"></i>
-                              </button>
-                            )}
+                        <div className="file-actions">
+                          {toolId === 'merge' && idx > 0 && (
                             <button 
-                              className="btn-remove" 
-                              onClick={() => removeFile(idx)}
-                              title="Remove"
+                              className="btn-move-up" 
+                              onClick={() => moveFile(idx, idx - 1)}
+                              title="Move up"
                             >
-                              <i className="fas fa-times"></i>
+                              <i className="fas fa-arrow-up"></i>
                             </button>
-                          </div>
-                        )}
+                          )}
+                          {toolId === 'merge' && idx < uploadedFiles.length - 1 && (
+                            <button 
+                              className="btn-move-down" 
+                              onClick={() => moveFile(idx, idx + 1)}
+                              title="Move down"
+                            >
+                              <i className="fas fa-arrow-down"></i>
+                            </button>
+                          )}
+                          <button 
+                            className="btn-remove" 
+                            onClick={() => removeFile(idx)}
+                            title="Remove"
+                          >
+                            <i className="fas fa-times"></i>
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>

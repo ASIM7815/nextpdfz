@@ -356,40 +356,271 @@ async function pdfToImages(file: File, options: any): Promise<Blob> {
 
 async function pdfToWord(file: File): Promise<Blob> {
   const arrayBuffer = await file.arrayBuffer()
-  
   window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
   
   const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise
-  let fullText = ''
+  const zip = new window.JSZip()
+  
+  // Canvas for rendering images
+  const canvas = document.createElement('canvas')
+  const context = canvas.getContext('2d')
+  
+  // Analyze PDF content and build document
+  const pageContents: any[] = []
+  let totalTextLength = 0
+  let hasImages = false
   
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i)
     const textContent = await page.getTextContent()
-    const pageText = textContent.items.map((item: any) => item.str).join(' ')
-    fullText += pageText + '\n\n'
+    
+    // Extract text with positioning information
+    const textItems = textContent.items.map((item: any) => ({
+      text: item.str,
+      x: item.transform[4],
+      y: item.transform[5],
+      width: item.width,
+      height: item.height,
+      fontName: item.fontName
+    }))
+    
+    const pageText = textItems.map(item => item.text).join(' ').trim()
+    totalTextLength += pageText.length
+    
+    // Render page as image for mixed/image-only content
+    const viewport = page.getViewport({ scale: 2.5 })
+    canvas.width = viewport.width
+    canvas.height = viewport.height
+    
+    await page.render({
+      canvasContext: context,
+      viewport: viewport
+    }).promise
+    
+    const imageData = canvas.toDataURL('image/png', 0.95).split(',')[1]
+    
+    // Determine page type
+    const isImageOnly = pageText.length < 50 // Less than 50 chars = likely image-only
+    const hasSignificantText = pageText.length > 50
+    
+    if (isImageOnly) hasImages = true
+    
+    pageContents.push({
+      pageNum: i,
+      text: pageText,
+      textItems: textItems,
+      imageData: imageData,
+      isImageOnly: isImageOnly,
+      hasSignificantText: hasSignificantText
+    })
   }
   
-  const docContent = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-<w:body>
-${fullText.split('\n').map(line => `<w:p><w:r><w:t>${line}</w:t></w:r></w:p>`).join('')}
-</w:body>
-</w:document>`
+  // Determine overall document type
+  const avgTextPerPage = totalTextLength / pdf.numPages
+  const isFullyImageBased = avgTextPerPage < 50
+  const isFullyTextBased = avgTextPerPage > 200 && !hasImages
+  const isMixed = !isFullyImageBased && !isFullyTextBased
   
-  const zip = new window.JSZip()
+  // Build Word document XML
+  let docContent = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+  docContent += '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" '
+  docContent += 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" '
+  docContent += 'xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" '
+  docContent += 'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" '
+  docContent += 'xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">'
+  docContent += '<w:body>'
+  
+  const imageRels: string[] = []
+  let imageCounter = 0
+  
+  for (const pageContent of pageContents) {
+    if (isFullyImageBased || pageContent.isImageOnly) {
+      // Image-only page: embed full page as image
+      imageCounter++
+      const imageId = `image${imageCounter}`
+      zip.file(`word/media/${imageId}.png`, pageContent.imageData, { base64: true })
+      imageRels.push(`<Relationship Id="rId${imageCounter}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/${imageId}.png"/>`)
+      
+      // Add image to document with proper sizing
+      docContent += '<w:p>'
+      docContent += '<w:r>'
+      docContent += '<w:drawing>'
+      docContent += '<wp:inline distT="0" distB="0" distL="0" distR="0">'
+      docContent += `<wp:extent cx="5400000" cy="7000000"/>` // A4 proportions
+      docContent += '<wp:effectExtent l="0" t="0" r="0" b="0"/>'
+      docContent += '<wp:docPr id="' + imageCounter + '" name="Page ' + pageContent.pageNum + '"/>'
+      docContent += '<wp:cNvGraphicFramePr/>'
+      docContent += '<a:graphic>'
+      docContent += '<a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">'
+      docContent += '<pic:pic>'
+      docContent += '<pic:nvPicPr>'
+      docContent += '<pic:cNvPr id="' + imageCounter + '" name="Page ' + pageContent.pageNum + '"/>'
+      docContent += '<pic:cNvPicPr/>'
+      docContent += '</pic:nvPicPr>'
+      docContent += '<pic:blipFill>'
+      docContent += `<a:blip r:embed="rId${imageCounter}"/>`
+      docContent += '<a:stretch><a:fillRect/></a:stretch>'
+      docContent += '</pic:blipFill>'
+      docContent += '<pic:spPr>'
+      docContent += '<a:xfrm><a:off x="0" y="0"/><a:ext cx="5400000" cy="7000000"/></a:xfrm>'
+      docContent += '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>'
+      docContent += '</pic:spPr>'
+      docContent += '</pic:pic>'
+      docContent += '</a:graphicData>'
+      docContent += '</a:graphic>'
+      docContent += '</wp:inline>'
+      docContent += '</w:drawing>'
+      docContent += '</w:r>'
+      docContent += '</w:p>'
+      
+    } else if (isFullyTextBased && pageContent.hasSignificantText) {
+      // Text-only: preserve text with alignment
+      const lines = groupTextIntoLines(pageContent.textItems)
+      
+      for (const line of lines) {
+        const alignment = determineAlignment(line.x, line.width)
+        
+        docContent += '<w:p>'
+        if (alignment !== 'left') {
+          docContent += '<w:pPr><w:jc w:val="' + alignment + '"/></w:pPr>'
+        }
+        docContent += '<w:r>'
+        docContent += '<w:t xml:space="preserve">' + escapeXml(line.text) + '</w:t>'
+        docContent += '</w:r>'
+        docContent += '</w:p>'
+      }
+      
+    } else {
+      // Mixed content: embed page as image to preserve exact layout
+      imageCounter++
+      const imageId = `image${imageCounter}`
+      zip.file(`word/media/${imageId}.png`, pageContent.imageData, { base64: true })
+      imageRels.push(`<Relationship Id="rId${imageCounter}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/${imageId}.png"/>`)
+      
+      docContent += '<w:p>'
+      docContent += '<w:r>'
+      docContent += '<w:drawing>'
+      docContent += '<wp:inline distT="0" distB="0" distL="0" distR="0">'
+      docContent += `<wp:extent cx="5400000" cy="7000000"/>`
+      docContent += '<wp:effectExtent l="0" t="0" r="0" b="0"/>'
+      docContent += '<wp:docPr id="' + imageCounter + '" name="Page ' + pageContent.pageNum + '"/>'
+      docContent += '<wp:cNvGraphicFramePr/>'
+      docContent += '<a:graphic>'
+      docContent += '<a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">'
+      docContent += '<pic:pic>'
+      docContent += '<pic:nvPicPr>'
+      docContent += '<pic:cNvPr id="' + imageCounter + '" name="Page ' + pageContent.pageNum + '"/>'
+      docContent += '<pic:cNvPicPr/>'
+      docContent += '</pic:nvPicPr>'
+      docContent += '<pic:blipFill>'
+      docContent += `<a:blip r:embed="rId${imageCounter}"/>`
+      docContent += '<a:stretch><a:fillRect/></a:stretch>'
+      docContent += '</pic:blipFill>'
+      docContent += '<pic:spPr>'
+      docContent += '<a:xfrm><a:off x="0" y="0"/><a:ext cx="5400000" cy="7000000"/></a:xfrm>'
+      docContent += '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>'
+      docContent += '</pic:spPr>'
+      docContent += '</pic:pic>'
+      docContent += '</a:graphicData>'
+      docContent += '</a:graphic>'
+      docContent += '</wp:inline>'
+      docContent += '</w:drawing>'
+      docContent += '</w:r>'
+      docContent += '</w:p>'
+    }
+    
+    // Add page break between pages (except last page)
+    if (pageContent.pageNum < pdf.numPages) {
+      docContent += '<w:p><w:r><w:br w:type="page"/></w:r></w:p>'
+    }
+  }
+  
+  docContent += '</w:body>'
+  docContent += '</w:document>'
+  
   zip.file('word/document.xml', docContent)
-  zip.file('[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
-<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-<Default Extension="xml" ContentType="application/xml"/>
-<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
-</Types>`)
+  
+  // Document relationships
+  let docRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+  docRels += '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+  docRels += imageRels.join('')
+  docRels += '</Relationships>'
+  zip.file('word/_rels/document.xml.rels', docRels)
+  
+  // Content Types
+  let contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+  contentTypes += '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+  contentTypes += '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+  contentTypes += '<Default Extension="xml" ContentType="application/xml"/>'
+  contentTypes += '<Default Extension="png" ContentType="image/png"/>'
+  contentTypes += '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
+  contentTypes += '</Types>'
+  zip.file('[Content_Types].xml', contentTypes)
+  
+  // Root relationships
   zip.file('_rels/.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
 <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
 </Relationships>`)
   
   return await zip.generateAsync({ type: 'blob' })
+}
+
+// Helper function to group text items into lines
+function groupTextIntoLines(textItems: any[]): any[] {
+  if (textItems.length === 0) return []
+  
+  // Sort by Y position (top to bottom)
+  const sorted = [...textItems].sort((a, b) => b.y - a.y)
+  
+  const lines: any[] = []
+  let currentLine: any = null
+  
+  for (const item of sorted) {
+    if (!currentLine || Math.abs(currentLine.y - item.y) > 5) {
+      // New line
+      if (currentLine) lines.push(currentLine)
+      currentLine = {
+        text: item.text,
+        x: item.x,
+        y: item.y,
+        width: item.width,
+        items: [item]
+      }
+    } else {
+      // Same line
+      currentLine.text += ' ' + item.text
+      currentLine.width += item.width
+      currentLine.items.push(item)
+    }
+  }
+  
+  if (currentLine) lines.push(currentLine)
+  
+  return lines
+}
+
+// Helper function to determine text alignment
+function determineAlignment(x: number, width: number): string {
+  const pageWidth = 595 // Approximate A4 width in points
+  const centerX = pageWidth / 2
+  const rightMargin = pageWidth - 50
+  
+  if (x < 100) return 'left'
+  if (x > rightMargin - width) return 'right'
+  if (Math.abs(x - centerX + width / 2) < 50) return 'center'
+  
+  return 'left'
+}
+
+// Helper function to escape XML special characters
+function escapeXml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;')
 }
 
 async function wordToPDF(file: File): Promise<Blob> {
@@ -468,31 +699,163 @@ async function pdfToPowerPoint(file: File): Promise<Blob> {
   const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise
   const zip = new window.JSZip()
   
-  let slidesXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:sldIdLst>'
+  // Canvas for rendering images
+  const canvas = document.createElement('canvas')
+  const context = canvas.getContext('2d')
   
+  const presentationRels: string[] = []
+  
+  // Convert each PDF page to a PowerPoint slide with image
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i)
-    const textContent = await page.getTextContent()
-    const pageText = textContent.items.map((item: any) => item.str).join(' ')
     
-    const slideXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
-<p:cSld><p:spTree><p:sp><p:txBody><a:p xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
-<a:r><a:t>${pageText}</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:sld>`
+    // Render page as high-quality image
+    const viewport = page.getViewport({ scale: 2.5 })
+    canvas.width = viewport.width
+    canvas.height = viewport.height
+    
+    await page.render({
+      canvasContext: context,
+      viewport: viewport
+    }).promise
+    
+    // Convert to PNG
+    const imageData = canvas.toDataURL('image/png', 0.95).split(',')[1]
+    const imageId = `image${i}`
+    
+    // Save image to media folder
+    zip.file(`ppt/media/${imageId}.png`, imageData, { base64: true })
+    
+    // Create slide XML with embedded image
+    let slideXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    slideXml += '<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" '
+    slideXml += 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" '
+    slideXml += 'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">'
+    slideXml += '<p:cSld>'
+    slideXml += '<p:spTree>'
+    slideXml += '<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>'
+    slideXml += '<p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/>'
+    slideXml += '<a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>'
+    
+    // Add picture to slide
+    slideXml += '<p:pic>'
+    slideXml += '<p:nvPicPr>'
+    slideXml += `<p:cNvPr id="${i + 1}" name="Slide ${i} Image"/>`
+    slideXml += '<p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr>'
+    slideXml += '<p:nvPr/>'
+    slideXml += '</p:nvPicPr>'
+    slideXml += '<p:blipFill>'
+    slideXml += `<a:blip r:embed="rId1"/>`
+    slideXml += '<a:stretch><a:fillRect/></a:stretch>'
+    slideXml += '</p:blipFill>'
+    slideXml += '<p:spPr>'
+    slideXml += '<a:xfrm><a:off x="0" y="0"/><a:ext cx="9144000" cy="6858000"/></a:xfrm>'
+    slideXml += '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>'
+    slideXml += '</p:spPr>'
+    slideXml += '</p:pic>'
+    
+    slideXml += '</p:spTree>'
+    slideXml += '</p:cSld>'
+    slideXml += '<p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr>'
+    slideXml += '</p:sld>'
     
     zip.file(`ppt/slides/slide${i}.xml`, slideXml)
-    slidesXml += `<p:sldId id="${i}" r:id="rId${i}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/>`
+    
+    // Slide relationship to image
+    const slideRelXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/${imageId}.png"/>
+</Relationships>`
+    zip.file(`ppt/slides/_rels/slide${i}.xml.rels`, slideRelXml)
+    
+    // Add to presentation relationships
+    presentationRels.push(`<Relationship Id="rId${i}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide${i}.xml"/>`)
   }
   
-  slidesXml += '</p:sldIdLst></p:presentation>'
-  zip.file('ppt/presentation.xml', slidesXml)
+  // Presentation XML
+  let presentationXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+  presentationXml += '<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" '
+  presentationXml += 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" '
+  presentationXml += 'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">'
+  presentationXml += '<p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst>'
+  presentationXml += '<p:sldIdLst>'
   
-  zip.file('[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
-<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-<Default Extension="xml" ContentType="application/xml"/>
-<Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>
-</Types>`)
+  for (let i = 1; i <= pdf.numPages; i++) {
+    presentationXml += `<p:sldId id="${255 + i}" r:id="rId${i + 1}"/>`
+  }
+  
+  presentationXml += '</p:sldIdLst>'
+  presentationXml += '<p:sldSz cx="9144000" cy="6858000"/>'
+  presentationXml += '<p:notesSz cx="6858000" cy="9144000"/>'
+  presentationXml += '</p:presentation>'
+  
+  zip.file('ppt/presentation.xml', presentationXml)
+  
+  // Slide master (required for valid PPTX)
+  const slideMasterXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:sldMaster xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<p:cSld>
+<p:spTree>
+<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>
+<p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>
+</p:spTree>
+</p:cSld>
+<p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/>
+<p:sldLayoutIdLst><p:sldLayoutId id="2147483649" r:id="rId1"/></p:sldLayoutIdLst>
+</p:sldMaster>`
+  zip.file('ppt/slideMasters/slideMaster1.xml', slideMasterXml)
+  
+  // Slide layout (required)
+  const slideLayoutXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:sldLayout xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" type="blank">
+<p:cSld name="Blank">
+<p:spTree>
+<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>
+<p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>
+</p:spTree>
+</p:cSld>
+<p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr>
+</p:sldLayout>`
+  zip.file('ppt/slideLayouts/slideLayout1.xml', slideLayoutXml)
+  
+  // Presentation relationships
+  let presentationRelsXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+  presentationRelsXml += '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+  presentationRelsXml += '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="slideMasters/slideMaster1.xml"/>'
+  presentationRels.forEach((rel, idx) => {
+    presentationRelsXml += rel.replace(`rId${idx + 1}`, `rId${idx + 2}`)
+  })
+  presentationRelsXml += '</Relationships>'
+  zip.file('ppt/_rels/presentation.xml.rels', presentationRelsXml)
+  
+  // Slide master relationships
+  zip.file('ppt/slideMasters/_rels/slideMaster1.xml.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>
+</Relationships>`)
+  
+  // Content Types
+  let contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+  contentTypes += '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+  contentTypes += '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+  contentTypes += '<Default Extension="xml" ContentType="application/xml"/>'
+  contentTypes += '<Default Extension="png" ContentType="image/png"/>'
+  contentTypes += '<Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>'
+  contentTypes += '<Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>'
+  contentTypes += '<Override PartName="/ppt/slideLayouts/slideLayout1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>'
+  
+  for (let i = 1; i <= pdf.numPages; i++) {
+    contentTypes += `<Override PartName="/ppt/slides/slide${i}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>`
+  }
+  
+  contentTypes += '</Types>'
+  zip.file('[Content_Types].xml', contentTypes)
+  
+  // Root relationships
+  zip.file('_rels/.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
+</Relationships>`)
   
   return await zip.generateAsync({ type: 'blob' })
 }
@@ -504,37 +867,164 @@ async function pdfToExcel(file: File): Promise<Blob> {
   const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise
   const zip = new window.JSZip()
   
-  let sheetData = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>'
+  // Create canvas for rendering PDF pages as images
+  const canvas = document.createElement('canvas')
+  const context = canvas.getContext('2d')
   
-  let rowIndex = 1
+  // Column widths and row heights for better layout
+  let colsXml = '<cols>'
+  for (let i = 0; i < 15; i++) {
+    colsXml += `<col min="${i + 1}" max="${i + 1}" width="12" customWidth="1"/>`
+  }
+  colsXml += '</cols>'
+  
+  let sheetData = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+  sheetData += '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
+  sheetData += 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+  sheetData += '<sheetViews><sheetView workbookViewId="0"><selection activeCell="A1" sqref="A1"/></sheetView></sheetViews>'
+  sheetData += '<sheetFormatPr defaultRowHeight="15"/>'
+  sheetData += colsXml
+  sheetData += '<sheetData>'
+  
+  let rowIndex = 0
+  const images: any[] = []
+  const drawingRels: string[] = []
+  
+  // Convert each PDF page to high-quality image and embed in Excel
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i)
-    const textContent = await page.getTextContent()
-    const lines = textContent.items.map((item: any) => item.str)
     
-    lines.forEach((line: string) => {
-      if (line.trim()) {
-        sheetData += `<row r="${rowIndex}"><c r="A${rowIndex}" t="inlineStr"><is><t>${line}</t></is></c></row>`
-        rowIndex++
-      }
+    // Get page dimensions
+    const viewport = page.getViewport({ scale: 3.0 }) // Higher scale for Canva templates
+    canvas.width = viewport.width
+    canvas.height = viewport.height
+    
+    // Render page with high quality
+    await page.render({
+      canvasContext: context,
+      viewport: viewport
+    }).promise
+    
+    // Convert to PNG with maximum quality (perfect for Canva templates)
+    const imageData = canvas.toDataURL('image/png', 1.0).split(',')[1]
+    const imageId = images.length + 1
+    
+    // Save image to Excel media folder
+    zip.file(`xl/media/image${imageId}.png`, imageData, { base64: true })
+    
+    // Calculate image dimensions in Excel units (EMUs - English Metric Units)
+    // 1 inch = 914400 EMUs, 1 pixel ≈ 9525 EMUs at 96 DPI
+    const imageWidthEMU = Math.round(viewport.width * 9525)
+    const imageHeightEMU = Math.round(viewport.height * 9525)
+    
+    // Calculate rows needed based on image height (Excel row height ≈ 20 pixels default)
+    const rowsNeeded = Math.ceil(viewport.height / 20)
+    
+    images.push({
+      id: imageId,
+      row: rowIndex,
+      page: i,
+      widthEMU: imageWidthEMU,
+      heightEMU: imageHeightEMU,
+      rowsSpan: rowsNeeded
     })
+    
+    // Move to next position (add spacing between pages)
+    rowIndex += rowsNeeded + 2
   }
   
-  sheetData += '</sheetData></worksheet>'
+  sheetData += '</sheetData>'
+  
+  // Add drawing reference if images exist
+  if (images.length > 0) {
+    sheetData += '<drawing r:id="rId1"/>'
+  }
+  
+  sheetData += '</worksheet>'
+  
   zip.file('xl/worksheets/sheet1.xml', sheetData)
   
-  zip.file('[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
-<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-<Default Extension="xml" ContentType="application/xml"/>
-<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
-<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
-</Types>`)
+  // Create drawing XML with properly sized images
+  if (images.length > 0) {
+    let drawingXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    drawingXml += '<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" '
+    drawingXml += 'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">'
+    
+    images.forEach((img, idx) => {
+      // Use absolute positioning for better control
+      drawingXml += `<xdr:absoluteAnchor>`
+      drawingXml += `<xdr:pos x="0" y="${img.row * 190500}"/>` // Position based on row
+      drawingXml += `<xdr:ext cx="${img.widthEMU}" cy="${img.heightEMU}"/>` // Actual image dimensions
+      drawingXml += `<xdr:pic>`
+      drawingXml += `<xdr:nvPicPr>`
+      drawingXml += `<xdr:cNvPr id="${idx + 1}" name="PDF Page ${img.page}" descr="Canva Template Page ${img.page}"/>`
+      drawingXml += `<xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr>`
+      drawingXml += `</xdr:nvPicPr>`
+      drawingXml += `<xdr:blipFill>`
+      drawingXml += `<a:blip r:embed="rId${idx + 1}"/>`
+      drawingXml += `<a:stretch><a:fillRect/></a:stretch>`
+      drawingXml += `</xdr:blipFill>`
+      drawingXml += `<xdr:spPr>`
+      drawingXml += `<a:xfrm><a:off x="0" y="0"/><a:ext cx="${img.widthEMU}" cy="${img.heightEMU}"/></a:xfrm>`
+      drawingXml += `<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>`
+      drawingXml += `</xdr:spPr>`
+      drawingXml += `</xdr:pic>`
+      drawingXml += `<xdr:clientData/>`
+      drawingXml += `</xdr:absoluteAnchor>`
+      
+      drawingRels.push(`<Relationship Id="rId${idx + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image${img.id}.png"/>`)
+    })
+    
+    drawingXml += '</xdr:wsDr>'
+    zip.file('xl/drawings/drawing1.xml', drawingXml)
+    
+    // Drawing relationships
+    let drawingRelsXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    drawingRelsXml += '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+    drawingRelsXml += drawingRels.join('')
+    drawingRelsXml += '</Relationships>'
+    zip.file('xl/drawings/_rels/drawing1.xml.rels', drawingRelsXml)
+  }
   
+  // Content Types
+  let contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+  contentTypes += '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+  contentTypes += '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+  contentTypes += '<Default Extension="xml" ContentType="application/xml"/>'
+  contentTypes += '<Default Extension="png" ContentType="image/png"/>'
+  contentTypes += '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+  contentTypes += '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+  if (images.length > 0) {
+    contentTypes += '<Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>'
+  }
+  contentTypes += '</Types>'
+  zip.file('[Content_Types].xml', contentTypes)
+  
+  // Workbook
   zip.file('xl/workbook.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-<sheets><sheet name="Sheet1" sheetId="1" r:id="rId1" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/></sheets>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheets><sheet name="PDF Template" sheetId="1" r:id="rId1"/></sheets>
 </workbook>`)
+  
+  // Workbook relationships
+  zip.file('xl/_rels/workbook.xml.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+</Relationships>`)
+  
+  // Worksheet relationships
+  if (images.length > 0) {
+    zip.file('xl/worksheets/_rels/sheet1.xml.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing1.xml"/>
+</Relationships>`)
+  }
+  
+  // Root relationships
+  zip.file('_rels/.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`)
   
   return await zip.generateAsync({ type: 'blob' })
 }
