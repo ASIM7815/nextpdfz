@@ -1240,6 +1240,12 @@ async function protectPDF(file: File, options: any): Promise<Blob> {
     throw new Error('Password must be at least 3 characters long')
   }
 
+  // Validate password contains at least 3 characters (letters, numbers, or special characters)
+  const validChars = password.match(/[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/g)
+  if (!validChars || validChars.length < 3) {
+    throw new Error('Password must contain at least 3 letters, numbers, or special characters')
+  }
+
   // Convert file to base64
   const arrayBuffer = await file.arrayBuffer()
   const base64 = btoa(
