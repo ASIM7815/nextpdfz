@@ -1210,19 +1210,49 @@ async function htmlToPDF(file: File): Promise<Blob> {
 }
 
 async function unlockPDF(file: File, options: any): Promise<Blob> {
-  const { PDFDocument } = window.PDFLib
-  const arrayBuffer = await file.arrayBuffer()
+  const password = options.password || ''
   
-  try {
-    const pdfDoc = await PDFDocument.load(arrayBuffer, { 
-      ignoreEncryption: true 
-    })
-    
-    const pdfBytes = await pdfDoc.save()
-    return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
-  } catch (error) {
-    throw new Error('Unable to unlock PDF. The PDF may be corrupted or use unsupported encryption.')
+  // Validate password is provided
+  if (!password) {
+    throw new Error('Password is required to unlock the PDF')
   }
+  
+  // Convert file to base64
+  const arrayBuffer = await file.arrayBuffer()
+  const base64 = btoa(
+    new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+  )
+
+  // Call API endpoint
+  const response = await fetch('/api/unlock-pdf', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      file: base64,
+      password: password
+    })
+  })
+
+  const result = await response.json()
+
+  if (!response.ok) {
+    throw new Error(result.error || 'Failed to unlock PDF')
+  }
+
+  if (!result.success || !result.file) {
+    throw new Error('Invalid response from server')
+  }
+
+  // Convert base64 back to blob
+  const binaryString = atob(result.file)
+  const bytes = new Uint8Array(binaryString.length)
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i)
+  }
+
+  return new Blob([bytes], { type: 'application/pdf' })
 }
 
 async function protectPDF(file: File, options: any): Promise<Blob> {

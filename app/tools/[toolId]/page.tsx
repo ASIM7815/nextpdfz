@@ -109,6 +109,14 @@ export default function ToolPage() {
       }
     }
     
+    // Validate password for unlock tool
+    if (toolId === 'unlock') {
+      if (!options.password) {
+        setUnlockError('Password is required to unlock the PDF')
+        return
+      }
+    }
+    
     if (toolId === 'compress' && options.targetSize) {
       const targetSize = parseInt(options.targetSize)
       if (targetSize < 30) {
@@ -395,11 +403,11 @@ export default function ToolPage() {
                     {toolId === 'unlock' && (
                       <>
                         <div className="option-group">
-                          <label>Password (if PDF is encrypted)</label>
+                          <label>Password (required)</label>
                           <div className="password-input-wrapper">
                             <input 
                               type={showPassword ? 'text' : 'password'}
-                              placeholder="Enter password (leave empty if not encrypted)"
+                              placeholder="Enter password to unlock PDF"
                               value={options.password || ''}
                               onChange={(e) => {
                                 setOptions({...options, password: e.target.value})
@@ -407,6 +415,7 @@ export default function ToolPage() {
                               }}
                               maxLength={300}
                               title="Enter the password to unlock the PDF"
+                              required
                             />
                             <button 
                               type="button"
@@ -432,7 +441,7 @@ export default function ToolPage() {
                         </div>
                         <div style={{background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: '10px', padding: '1rem', marginTop: '1rem'}}>
                           <p style={{color: '#92400e', fontSize: '0.9rem', margin: 0}}>
-                            <i className="fas fa-info-circle"></i> This tool removes restrictions (printing, copying, editing). If the PDF requires a password to open, enter it above.
+                            <i className="fas fa-info-circle"></i> Enter the correct password to unlock and remove all restrictions from the PDF.
                           </p>
                         </div>
                       </>
