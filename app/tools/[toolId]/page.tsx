@@ -308,7 +308,6 @@ export default function ToolPage() {
                               value={options.password || ''}
                               onChange={(e) => setOptions({...options, password: e.target.value})}
                               minLength={3}
-                              pattern="^(?=.*[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':\"\\|,.<>\/?]).{3,}$"
                               title="Please provide at least 3 letters, numbers, or special characters"
                               required
                             />
@@ -330,7 +329,6 @@ export default function ToolPage() {
                               value={options.confirmPassword || ''}
                               onChange={(e) => setOptions({...options, confirmPassword: e.target.value})}
                               minLength={3}
-                              pattern="^(?=.*[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':\"\\|,.<>\/?]).{3,}$"
                               title="Please provide at least 3 letters, numbers, or special characters"
                               required
                             />
