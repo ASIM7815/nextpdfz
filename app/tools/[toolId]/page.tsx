@@ -157,6 +157,10 @@ export default function ToolPage() {
 
   const handleDownload = () => {
     if (!result) return
+    
+    // Check if mobile device
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+    
     const url = URL.createObjectURL(result)
     const a = document.createElement('a')
     a.href = url
@@ -167,11 +171,31 @@ export default function ToolPage() {
     if (toolId === 'pdf-to-powerpoint') extension = 'pptx'
     if (toolId === 'pdf-to-excel') extension = 'xlsx'
     
-    a.download = `processed_${toolId}_${Date.now()}.${extension}`
+    // Get original filename without extension and add 'pdfz' before the extension
+    const originalFile = uploadedFiles[0]
+    let filename = 'processed'
+    
+    if (originalFile) {
+      const originalName = originalFile.name
+      const lastDotIndex = originalName.lastIndexOf('.')
+      const nameWithoutExt = lastDotIndex > 0 ? originalName.substring(0, lastDotIndex) : originalName
+      filename = `${nameWithoutExt}pdfz`
+    }
+    
+    a.download = `${filename}.${extension}`
+    
+    if (isMobile) {
+      // On mobile, open in new tab instead of forcing download
+      a.target = '_blank'
+      a.rel = 'noopener noreferrer'
+    }
+    
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+    
+    // Clean up the URL after a delay
+    setTimeout(() => URL.revokeObjectURL(url), 100)
   }
 
   const handleReset = () => {
