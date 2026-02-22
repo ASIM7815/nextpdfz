@@ -1,8 +1,8 @@
 from http.server import BaseHTTPRequestHandler
-from PyPDF2 import PdfReader, PdfWriter
 import json
 import io
 import base64
+import pikepdf
 
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
@@ -51,24 +51,21 @@ class handler(BaseHTTPRequestHandler):
             # Decode base64 file data
             file_data = base64.b64decode(file_data_base64)
             
-            # Create PDF reader and writer
-            pdf_reader = PdfReader(io.BytesIO(file_data))
-            pdf_writer = PdfWriter()
+            # Open PDF with pikepdf
+            pdf = pikepdf.open(io.BytesIO(file_data))
             
-            # Copy all pages to writer
-            for page in pdf_reader.pages:
-                pdf_writer.add_page(page)
-            
-            # Encrypt the PDF with password (PyPDF2 3.0+ syntax)
-            pdf_writer.encrypt(
-                user_pwd=password,
-                owner_pwd=password,
-                use_128bit=False  # Use 256-bit encryption
-            )
-            
-            # Write to bytes
+            # Save with encryption
             output_buffer = io.BytesIO()
-            pdf_writer.write(output_buffer)
+            pdf.save(
+                output_buffer,
+                encryption=pikepdf.Encryption(
+                    owner=password,
+                    user=password,
+                    R=6  # Use AES-256 encryption
+                )
+            )
+            pdf.close()
+            
             encrypted_pdf = output_buffer.getvalue()
             
             # Encode to base64 for JSON response

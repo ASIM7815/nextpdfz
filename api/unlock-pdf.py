@@ -1,8 +1,8 @@
 from http.server import BaseHTTPRequestHandler
-from PyPDF2 import PdfReader, PdfWriter
 import json
 import io
 import base64
+import pikepdf
 
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
@@ -32,45 +32,46 @@ class handler(BaseHTTPRequestHandler):
             # Decode base64 file data
             file_data = base64.b64decode(file_data_base64)
             
-            # Create PDF reader with password if provided
+            # Try to open PDF with pikepdf
             try:
+                # If password provided, use it
                 if password:
-                    pdf_reader = PdfReader(io.BytesIO(file_data), password=password)
+                    pdf = pikepdf.open(io.BytesIO(file_data), password=password)
                 else:
-                    pdf_reader = PdfReader(io.BytesIO(file_data))
-            except Exception as e:
-                error_msg = str(e).lower()
-                if 'password' in error_msg or 'encrypted' in error_msg:
-                    self.send_response(400)
-                    self.send_header('Content-type', 'application/json')
-                    self.end_headers()
-                    self.wfile.write(json.dumps({
-                        'error': 'Incorrect password or PDF is encrypted. Please provide the correct password.'
-                    }).encode())
-                    return
-                else:
-                    raise
-            
-            # Check if PDF is encrypted
-            if pdf_reader.is_encrypted:
+                    # Try without password first (for restriction-only PDFs)
+                    try:
+                        pdf = pikepdf.open(io.BytesIO(file_data))
+                    except pikepdf.PasswordError:
+                        # If it needs a password, inform the user
+                        self.send_response(400)
+                        self.send_header('Content-type', 'application/json')
+                        self.end_headers()
+                        self.wfile.write(json.dumps({
+                            'error': 'This PDF requires a password to open. Please enter the password.'
+                        }).encode())
+                        return
+            except pikepdf.PasswordError:
                 self.send_response(400)
                 self.send_header('Content-type', 'application/json')
                 self.end_headers()
                 self.wfile.write(json.dumps({
-                    'error': 'PDF is still encrypted. Please provide the correct password.'
+                    'error': 'Incorrect password. Please try again.'
+                }).encode())
+                return
+            except Exception as e:
+                self.send_response(500)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    'error': f'Failed to open PDF: {str(e)}'
                 }).encode())
                 return
             
-            # Create PDF writer
-            pdf_writer = PdfWriter()
-            
-            # Copy all pages to writer (this removes encryption)
-            for page in pdf_reader.pages:
-                pdf_writer.add_page(page)
-            
-            # Write to bytes (without encryption)
+            # Save the PDF without encryption/restrictions
             output_buffer = io.BytesIO()
-            pdf_writer.write(output_buffer)
+            pdf.save(output_buffer)
+            pdf.close()
+            
             unlocked_pdf = output_buffer.getvalue()
             
             # Encode to base64 for JSON response

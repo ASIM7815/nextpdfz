@@ -22,6 +22,7 @@ export default function ToolPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [passwordError, setPasswordError] = useState('')
+  const [unlockError, setUnlockError] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const config = toolConfig[toolId]
@@ -88,8 +89,9 @@ export default function ToolPage() {
       return
     }
     
-    // Clear previous password error
+    // Clear previous errors
     setPasswordError('')
+    setUnlockError('')
     
     // Validate passwords for protect tool
     if (toolId === 'protect') {
@@ -130,9 +132,15 @@ export default function ToolPage() {
       const blob = await processFiles(toolId, uploadedFiles, options)
       setResult(blob)
       setProgress(100)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Processing error:', error)
-      alert('An error occurred while processing your files. Please try again.')
+      
+      // Handle unlock-specific errors
+      if (toolId === 'unlock') {
+        setUnlockError(error.message || 'An error occurred while unlocking the PDF. Please try again.')
+      } else {
+        alert('An error occurred while processing your files. Please try again.')
+      }
     } finally {
       clearInterval(interval)
       setProcessing(false)
@@ -165,6 +173,7 @@ export default function ToolPage() {
     setResult(null)
     setOptions({})
     setPasswordError('')
+    setUnlockError('')
   }
 
   return (
@@ -386,15 +395,18 @@ export default function ToolPage() {
                     {toolId === 'unlock' && (
                       <>
                         <div className="option-group">
-                          <label>Password (if PDF is encrypted)</label>
+                          <label>Password (only if PDF requires password to open)</label>
                           <div className="password-input-wrapper">
                             <input 
                               type={showPassword ? 'text' : 'password'}
-                              placeholder="Enter password (leave empty if not encrypted)"
+                              placeholder="Enter password (optional)"
                               value={options.password || ''}
-                              onChange={(e) => setOptions({...options, password: e.target.value})}
+                              onChange={(e) => {
+                                setOptions({...options, password: e.target.value})
+                                setUnlockError('')
+                              }}
                               maxLength={300}
-                              title="Enter the password to unlock the PDF"
+                              title="Enter the password only if PDF requires it to open"
                             />
                             <button 
                               type="button"
@@ -404,10 +416,23 @@ export default function ToolPage() {
                               <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                             </button>
                           </div>
+                          {unlockError && (
+                            <div style={{
+                              color: '#dc2626',
+                              fontSize: '0.875rem',
+                              marginTop: '0.5rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem'
+                            }}>
+                              <i className="fas fa-exclamation-circle"></i>
+                              {unlockError}
+                            </div>
+                          )}
                         </div>
                         <div style={{background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: '10px', padding: '1rem', marginTop: '1rem'}}>
                           <p style={{color: '#92400e', fontSize: '0.9rem', margin: 0}}>
-                            <i className="fas fa-info-circle"></i> If the PDF is password-protected, enter the password above. Otherwise, leave it empty.
+                            <i className="fas fa-info-circle"></i> This tool removes restrictions (printing, copying, editing). If the PDF requires a password to open, enter it above.
                           </p>
                         </div>
                       </>
