@@ -2,10 +2,17 @@ from http.server import BaseHTTPRequestHandler
 import json
 import base64
 from io import BytesIO
+
+# Try importing from both PyPDF2 and pypdf for compatibility
 try:
     from PyPDF2 import PdfReader, PdfWriter
+    PYPDF2_VERSION = 2
 except ImportError:
-    from pypdf import PdfReader, PdfWriter
+    try:
+        from pypdf import PdfReader, PdfWriter
+        PYPDF2_VERSION = 3
+    except ImportError:
+        raise ImportError("Neither PyPDF2 nor pypdf is installed")
 
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
@@ -45,8 +52,17 @@ class handler(BaseHTTPRequestHandler):
             for page in reader.pages:
                 writer.add_page(page)
             
-            # Encrypt with password (256-bit AES)
-            writer.encrypt(user_password=password, owner_password=password, algorithm="AES-256")
+            # Encrypt with password - use compatible method
+            try:
+                # Try pypdf3 style first (newer)
+                writer.encrypt(user_password=password, owner_password=password)
+            except TypeError:
+                try:
+                    # Try PyPDF2 style (older)
+                    writer.encrypt(user_pwd=password, owner_pwd=password)
+                except TypeError:
+                    # Fallback to simplest form
+                    writer.encrypt(password)
             
             # Write to output stream
             output_stream = BytesIO()
