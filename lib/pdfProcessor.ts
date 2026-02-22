@@ -1226,10 +1226,6 @@ async function unlockPDF(file: File, options: any): Promise<Blob> {
 }
 
 async function protectPDF(file: File, options: any): Promise<Blob> {
-  const { PDFDocument, rgb } = window.PDFLib
-  const arrayBuffer = await file.arrayBuffer()
-  const pdfDoc = await PDFDocument.load(arrayBuffer)
-  
   const password = options.password || ''
   
   if (!password) {
@@ -1240,31 +1236,44 @@ async function protectPDF(file: File, options: any): Promise<Blob> {
     throw new Error('Passwords do not match')
   }
   
-  // Add password as metadata
-  pdfDoc.setTitle('Protected Document')
-  pdfDoc.setAuthor('PDFZ Protected')
-  pdfDoc.setSubject(`Password: ${password}`)
-  pdfDoc.setKeywords(['protected', 'password-protected'])
-  pdfDoc.setCreator('PDFZ Password Protection')
+  if (password.length < 3) {
+    throw new Error('Password must be at least 3 characters long')
+  }
+
+  // Convert file to base64
+  const arrayBuffer = await file.arrayBuffer()
+  const base64 = btoa(
+    new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+  )
+
+  // Call Python API endpoint
+  const response = await fetch('/api/protect-pdf', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      file: base64,
+      password: password,
+      confirmPassword: options.confirmPassword
+    }),
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || 'Failed to protect PDF')
+  }
+
+  const result = await response.json()
   
-  // Add a watermark on first page indicating it's protected
-  const pages = pdfDoc.getPages()
-  if (pages.length > 0) {
-    const firstPage = pages[0]
-    const { width, height } = firstPage.getSize()
-    
-    // Add semi-transparent protection notice (using simple ASCII characters only)
-    firstPage.drawText('[Password Protected]', {
-      x: width - 150,
-      y: height - 30,
-      size: 10,
-      color: rgb(0.7, 0.7, 0.7),
-      opacity: 0.5,
-    })
+  // Decode base64 response back to blob
+  const binaryString = atob(result.file)
+  const bytes = new Uint8Array(binaryString.length)
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i)
   }
   
-  const pdfBytes = await pdfDoc.save()
-  return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
+  return new Blob([bytes], { type: 'application/pdf' })
 }
 
 async function organizePDF(file: File, options: any): Promise<Blob> {
