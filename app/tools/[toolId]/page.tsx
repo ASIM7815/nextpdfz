@@ -158,18 +158,25 @@ export default function ToolPage() {
   const handleDownload = () => {
     if (!result) return
     
-    // Check if mobile device
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
-    
-    const url = URL.createObjectURL(result)
-    const a = document.createElement('a')
-    a.href = url
-    
     let extension = 'pdf'
-    if (toolId === 'pdf-to-jpg') extension = 'zip'
-    if (toolId === 'pdf-to-word') extension = 'docx'
-    if (toolId === 'pdf-to-powerpoint') extension = 'pptx'
-    if (toolId === 'pdf-to-excel') extension = 'xlsx'
+    let mimeType = 'application/pdf'
+    
+    if (toolId === 'pdf-to-jpg') {
+      extension = 'zip'
+      mimeType = 'application/zip'
+    }
+    if (toolId === 'pdf-to-word') {
+      extension = 'docx'
+      mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    }
+    if (toolId === 'pdf-to-powerpoint') {
+      extension = 'pptx'
+      mimeType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+    }
+    if (toolId === 'pdf-to-excel') {
+      extension = 'xlsx'
+      mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    }
     
     // Get original filename without extension and add 'pdfz' before the extension
     const originalFile = uploadedFiles[0]
@@ -182,13 +189,12 @@ export default function ToolPage() {
       filename = `${nameWithoutExt}pdfz`
     }
     
+    // Create a new blob with the correct MIME type
+    const blob = new Blob([result], { type: mimeType })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
     a.download = `${filename}.${extension}`
-    
-    if (isMobile) {
-      // On mobile, open in new tab instead of forcing download
-      a.target = '_blank'
-      a.rel = 'noopener noreferrer'
-    }
     
     document.body.appendChild(a)
     a.click()
