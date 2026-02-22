@@ -304,11 +304,11 @@ export default function ToolPage() {
                           <div className="password-input-wrapper">
                             <input 
                               type={showPassword ? 'text' : 'password'}
-                              placeholder="Enter password (min 3 characters)"
+                              placeholder="Enter password (max 300 characters)"
                               value={options.password || ''}
                               onChange={(e) => setOptions({...options, password: e.target.value})}
-                              minLength={3}
-                              title="Please provide at least 3 letters, numbers, or special characters"
+                              maxLength={300}
+                              title="Password can be up to 300 characters"
                               required
                             />
                             <button 
@@ -328,8 +328,8 @@ export default function ToolPage() {
                               placeholder="Confirm password"
                               value={options.confirmPassword || ''}
                               onChange={(e) => setOptions({...options, confirmPassword: e.target.value})}
-                              minLength={3}
-                              title="Please provide at least 3 letters, numbers, or special characters"
+                              maxLength={300}
+                              title="Password can be up to 300 characters"
                               required
                             />
                             <button 

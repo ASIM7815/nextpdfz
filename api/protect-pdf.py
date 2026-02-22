@@ -39,24 +39,12 @@ class handler(BaseHTTPRequestHandler):
                 }).encode())
                 return
             
-            if len(password) < 3:
+            if len(password) > 300:
                 self.send_response(400)
                 self.send_header('Content-type', 'application/json')
                 self.end_headers()
                 self.wfile.write(json.dumps({
-                    'error': 'Password must be at least 3 characters long'
-                }).encode())
-                return
-            
-            # Validate password contains at least 3 valid characters (letters, numbers, or special characters)
-            import re
-            valid_chars = re.findall(r'[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};\':"\\|,.<>\/?]', password)
-            if len(valid_chars) < 3:
-                self.send_response(400)
-                self.send_header('Content-type', 'application/json')
-                self.end_headers()
-                self.wfile.write(json.dumps({
-                    'error': 'Password must contain at least 3 letters, numbers, or special characters'
+                    'error': 'Password must not exceed 300 characters'
                 }).encode())
                 return
             
