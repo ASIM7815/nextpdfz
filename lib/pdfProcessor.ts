@@ -7,6 +7,30 @@ declare global {
   }
 }
 
+// PDF.js type definitions
+interface PDFTextItem {
+  str: string
+  transform: number[]
+  width: number
+  height: number
+  fontName: string
+}
+
+interface PDFTextContent {
+  items: PDFTextItem[]
+}
+
+interface PDFPageProxy {
+  getTextContent(): Promise<PDFTextContent>
+  getViewport(params: { scale: number }): any
+  render(params: any): { promise: Promise<void> }
+}
+
+interface PDFDocumentProxy {
+  numPages: number
+  getPage(pageNumber: number): Promise<PDFPageProxy>
+}
+
 export async function processFiles(tool: string, files: File[], options: any): Promise<Blob> {
   switch(tool) {
     case 'merge':
@@ -384,7 +408,7 @@ async function pdfToWord(file: File): Promise<Blob> {
       fontName: item.fontName
     }))
     
-    const pageText = textItems.map(item => item.text).join(' ').trim()
+    const pageText = textItems.map((item: { text: string }) => item.text).join(' ').trim()
     totalTextLength += pageText.length
     
     // Render page as image for mixed/image-only content
