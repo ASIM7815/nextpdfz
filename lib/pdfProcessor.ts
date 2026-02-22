@@ -55,8 +55,6 @@ export async function processFiles(tool: string, files: File[], options: any): P
       return await pdfToPowerPoint(files[0])
     case 'pdf-to-excel':
       return await pdfToExcel(files[0])
-    case 'powerpoint-to-pdf':
-      return await powerPointToPDF(files[0])
     case 'excel-to-pdf':
       return await excelToPDF(files[0])
     case 'quality-report':
@@ -1049,32 +1047,6 @@ async function pdfToExcel(file: File): Promise<Blob> {
 </Relationships>`)
   
   return await zip.generateAsync({ type: 'blob' })
-}
-
-async function powerPointToPDF(file: File): Promise<Blob> {
-  // Use server-side LibreOffice conversion for accurate rendering
-  const formData = new FormData()
-  formData.append('file', file)
-  
-  const response = await fetch('/api/powerpoint-to-pdf', {
-    method: 'POST',
-    body: formData,
-  })
-  
-  if (!response.ok) {
-    let errorMessage = 'Failed to convert PowerPoint to PDF'
-    try {
-      const error = await response.json()
-      errorMessage = error.error || errorMessage
-    } catch {
-      // If response is not JSON, try to read as text
-      const text = await response.text()
-      errorMessage = text || errorMessage
-    }
-    throw new Error(errorMessage)
-  }
-  
-  return await response.blob()
 }
 
 async function excelToPDF(file: File): Promise<Blob> {
