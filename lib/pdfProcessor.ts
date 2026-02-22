@@ -113,6 +113,7 @@ async function compressPDF(file: File, options: any): Promise<Blob> {
   
   const targetSizeKB = parseInt(options.targetSize) || 30
   const targetSizeBytes = targetSizeKB * 1024
+  const originalSize = file.size
   
   // Remove metadata to reduce size
   pdfDoc.setTitle('')
@@ -122,44 +123,105 @@ async function compressPDF(file: File, options: any): Promise<Blob> {
   pdfDoc.setProducer('')
   pdfDoc.setCreator('')
   
-  // Try different compression levels to reach target size
-  let pdfBytes: Uint8Array
-  let compressionLevel = 150 // Start with low compression
+  // Get pages for image compression
+  const pages = pdfDoc.getPages()
   
-  // First attempt with medium compression
-  pdfBytes = await pdfDoc.save({
-    useObjectStreams: true,
-    addDefaultPage: false,
-    objectsPerTick: 75,
-    updateFieldAppearances: false,
+  // Convert PDF to images and recompress
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
+  const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise
+  
+  // Calculate compression ratio needed
+  const compressionRatio = targetSizeBytes / originalSize
+  
+  // Determine image quality based on compression ratio
+  let imageQuality = 0.95
+  if (compressionRatio < 0.1) imageQuality = 0.3
+  else if (compressionRatio < 0.2) imageQuality = 0.4
+  else if (compressionRatio < 0.3) imageQuality = 0.5
+  else if (compressionRatio < 0.5) imageQuality = 0.6
+  else if (compressionRatio < 0.7) imageQuality = 0.75
+  
+  // Determine scale based on compression ratio
+  let scale = 1.0
+  if (compressionRatio < 0.1) scale = 0.3
+  else if (compressionRatio < 0.2) scale = 0.4
+  else if (compressionRatio < 0.3) scale = 0.5
+  else if (compressionRatio < 0.5) scale = 0.6
+  else if (compressionRatio < 0.7) scale = 0.8
+  
+  // Create new PDF with compressed images
+  const { jsPDF } = window.jspdf
+  const compressedPdf = new jsPDF({
+    compress: true,
+    unit: 'pt',
+    format: 'a4'
   })
   
-  // If still too large, try higher compression
-  if (pdfBytes.length > targetSizeBytes) {
-    pdfBytes = await pdfDoc.save({
-      useObjectStreams: true,
-      addDefaultPage: false,
-      objectsPerTick: 25,
-      updateFieldAppearances: false,
-    })
-  }
+  const canvas = document.createElement('canvas')
+  const context = canvas.getContext('2d')
   
-  // If we need more compression, we'll need to reduce image quality
-  if (pdfBytes.length > targetSizeBytes) {
-    // Get all pages and try to compress images
-    const pages = pdfDoc.getPages()
-    const scale = Math.sqrt(targetSizeBytes / pdfBytes.length)
+  for (let i = 1; i <= pdf.numPages; i++) {
+    if (i > 1) compressedPdf.addPage()
     
-    // Re-save with maximum compression
-    pdfBytes = await pdfDoc.save({
-      useObjectStreams: true,
-      addDefaultPage: false,
-      objectsPerTick: 10,
-      updateFieldAppearances: false,
-    })
+    const page = await pdf.getPage(i)
+    const viewport = page.getViewport({ scale })
+    
+    canvas.width = viewport.width
+    canvas.height = viewport.height
+    
+    await page.render({
+      canvasContext: context,
+      viewport: viewport
+    }).promise
+    
+    // Convert canvas to compressed image
+    const imgData = canvas.toDataURL('image/jpeg', imageQuality)
+    
+    const pageWidth = compressedPdf.internal.pageSize.getWidth()
+    const pageHeight = compressedPdf.internal.pageSize.getHeight()
+    
+    compressedPdf.addImage(imgData, 'JPEG', 0, 0, pageWidth, pageHeight, undefined, 'FAST')
   }
   
-  return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
+  let pdfBlob = compressedPdf.output('blob')
+  
+  // If still too large, try more aggressive compression
+  if (pdfBlob.size > targetSizeBytes && imageQuality > 0.2) {
+    const moreAggressiveQuality = imageQuality * 0.7
+    const moreAggressiveScale = scale * 0.8
+    
+    const veryCompressedPdf = new jsPDF({
+      compress: true,
+      unit: 'pt',
+      format: 'a4'
+    })
+    
+    for (let i = 1; i <= pdf.numPages; i++) {
+      if (i > 1) veryCompressedPdf.addPage()
+      
+      const page = await pdf.getPage(i)
+      const viewport = page.getViewport({ scale: moreAggressiveScale })
+      
+      canvas.width = viewport.width
+      canvas.height = viewport.height
+      
+      await page.render({
+        canvasContext: context,
+        viewport: viewport
+      }).promise
+      
+      const imgData = canvas.toDataURL('image/jpeg', moreAggressiveQuality)
+      
+      const pageWidth = veryCompressedPdf.internal.pageSize.getWidth()
+      const pageHeight = veryCompressedPdf.internal.pageSize.getHeight()
+      
+      veryCompressedPdf.addImage(imgData, 'JPEG', 0, 0, pageWidth, pageHeight, undefined, 'FAST')
+    }
+    
+    pdfBlob = veryCompressedPdf.output('blob')
+  }
+  
+  return pdfBlob
 }
 
 async function rotatePDF(file: File, options: any): Promise<Blob> {
