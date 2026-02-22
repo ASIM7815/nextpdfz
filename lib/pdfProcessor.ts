@@ -1052,43 +1052,21 @@ async function pdfToExcel(file: File): Promise<Blob> {
 }
 
 async function powerPointToPDF(file: File): Promise<Blob> {
-  const arrayBuffer = await file.arrayBuffer()
-  const zip = await window.JSZip.loadAsync(arrayBuffer)
+  // Use server-side LibreOffice conversion for accurate rendering
+  const formData = new FormData()
+  formData.append('file', file)
   
-  const { jsPDF } = window.jspdf
-  const pdf = new jsPDF()
-  let firstPage = true
+  const response = await fetch('/api/powerpoint-to-pdf', {
+    method: 'POST',
+    body: formData,
+  })
   
-  const slideFiles = Object.keys(zip.files).filter(name => name.startsWith('ppt/slides/slide') && name.endsWith('.xml'))
-  
-  for (const slideFile of slideFiles) {
-    const slideXml = await zip.file(slideFile)!.async('string')
-    const parser = new DOMParser()
-    const xmlDoc = parser.parseFromString(slideXml, 'text/xml')
-    const textElements = xmlDoc.getElementsByTagName('a:t')
-    
-    let text = ''
-    for (let i = 0; i < textElements.length; i++) {
-      text += textElements[i].textContent + '\n'
-    }
-    
-    if (!firstPage) pdf.addPage()
-    
-    const lines = pdf.splitTextToSize(text, 180)
-    let y = 20
-    lines.forEach((line: string) => {
-      if (y > 280) {
-        pdf.addPage()
-        y = 20
-      }
-      pdf.text(line, 15, y)
-      y += 10
-    })
-    
-    firstPage = false
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || 'Failed to convert PowerPoint to PDF')
   }
   
-  return pdf.output('blob')
+  return await response.blob()
 }
 
 async function excelToPDF(file: File): Promise<Blob> {
