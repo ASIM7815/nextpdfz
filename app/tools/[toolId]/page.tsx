@@ -304,9 +304,13 @@ export default function ToolPage() {
                           <div className="password-input-wrapper">
                             <input 
                               type={showPassword ? 'text' : 'password'}
-                              placeholder="Enter password"
+                              placeholder="Enter password (min 3 characters)"
                               value={options.password || ''}
                               onChange={(e) => setOptions({...options, password: e.target.value})}
+                              minLength={3}
+                              pattern="^(?=.*[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':\"\\|,.<>\/?]).{3,}$"
+                              title="Please provide at least 3 letters, numbers, or special characters"
+                              required
                             />
                             <button 
                               type="button"
@@ -325,6 +329,10 @@ export default function ToolPage() {
                               placeholder="Confirm password"
                               value={options.confirmPassword || ''}
                               onChange={(e) => setOptions({...options, confirmPassword: e.target.value})}
+                              minLength={3}
+                              pattern="^(?=.*[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':\"\\|,.<>\/?]).{3,}$"
+                              title="Please provide at least 3 letters, numbers, or special characters"
+                              required
                             />
                             <button 
                               type="button"
