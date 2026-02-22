@@ -3,5 +3,15 @@
   "outputDirectory": ".next",
   "framework": "nextjs",
   "cleanUrls": true,
-  "trailingSlash": false
+  "trailingSlash": false,
+  "rewrites": [
+    {
+      "source": "/api/protect-pdf",
+      "destination": "/api/protect-pdf.py"
+    },
+    {
+      "source": "/api/unlock-pdf",
+      "destination": "/api/unlock-pdf.py"
+    }
+  ]
 }
