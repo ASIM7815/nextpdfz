@@ -512,11 +512,6 @@ body {
   box-shadow: 0 8px 20px rgba(220, 38, 38, 0.4);
 }
 
-.tool-icon.organize {
-  background: linear-gradient(135deg, #7c3aed, #4f46e5);
-  box-shadow: 0 8px 20px rgba(124, 58, 237, 0.4);
-}
-
 .tool-icon.repair {
   background: linear-gradient(135deg, #dc2626, #be123c);
   box-shadow: 0 8px 20px rgba(220, 38, 38, 0.4);

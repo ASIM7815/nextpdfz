@@ -71,8 +71,6 @@ export async function processFiles(tool: string, files: File[], options: any): P
       return await unlockPDF(files[0], options)
     case 'protect':
       return await protectPDF(files[0], options)
-    case 'organize':
-      return await organizePDF(files[0], options)
     case 'pdf-to-pdfa':
       return await pdfToPDFA(files[0])
     case 'repair':
@@ -1304,26 +1302,6 @@ async function protectPDF(file: File, options: any): Promise<Blob> {
   }
   
   return new Blob([bytes], { type: 'application/pdf' })
-}
-
-async function organizePDF(file: File, options: any): Promise<Blob> {
-  const { PDFDocument } = window.PDFLib
-  const arrayBuffer = await file.arrayBuffer()
-  const pdfDoc = await PDFDocument.load(arrayBuffer)
-  const newPdf = await PDFDocument.create()
-  
-  const pageOrder = options.pageOrder || '1,2,3'
-  const pages = pageOrder.split(',').map((p: string) => parseInt(p.trim()) - 1)
-  
-  for (const pageIndex of pages) {
-    if (pageIndex >= 0 && pageIndex < pdfDoc.getPageCount()) {
-      const [copiedPage] = await newPdf.copyPages(pdfDoc, [pageIndex])
-      newPdf.addPage(copiedPage)
-    }
-  }
-  
-  const pdfBytes = await newPdf.save()
-  return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
 }
 
 async function pdfToPDFA(file: File): Promise<Blob> {

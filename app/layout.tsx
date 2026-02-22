@@ -124,8 +124,7 @@ export default function RootLayout({
                 "JPG to PDF converter",
                 "Word to PDF",
                 "Excel to PDF",
-                "PowerPoint to PDF",
-                "Organize PDF pages"
+                "PowerPoint to PDF"
               ],
               "aggregateRating": {
                 "@type": "AggregateRating",

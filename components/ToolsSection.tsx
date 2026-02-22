@@ -29,7 +29,6 @@ export default function ToolsSection({ onToolClick, searchQuery = '' }: ToolsSec
     { id: 'rotate', icon: 'fa-sync', title: 'Rotate PDF', desc: 'Rotate pages in your PDF', iconClass: 'rotate' },
     { id: 'unlock', icon: 'fa-unlock', title: 'Unlock PDF', desc: 'Remove PDF restrictions', iconClass: 'unlock' },
     { id: 'protect', icon: 'fa-lock', title: 'Protect PDF', desc: 'Add password protection', iconClass: 'protect' },
-    { id: 'organize', icon: 'fa-sort', title: 'Organize PDF', desc: 'Reorder PDF pages', iconClass: 'organize' },
   ]
 
   // Filter tools based on search query

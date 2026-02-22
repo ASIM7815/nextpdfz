@@ -441,17 +441,6 @@ export default function ToolModal({ currentTool, onClose }: ToolModalProps) {
                     )}
                   </>
                 )}
-                {currentTool === 'organize' && (
-                  <div className="option-group">
-                    <label>Page Order (e.g., 3,1,2)</label>
-                    <input 
-                      type="text" 
-                      placeholder="1,2,3"
-                      value={options.pageOrder || ''}
-                      onChange={(e) => setOptions({...options, pageOrder: e.target.value})}
-                    />
-                  </div>
-                )}
                 {currentTool === 'page-numbers' && (
                   <div className="option-group">
                     <label>Position</label>
