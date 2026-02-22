@@ -32,32 +32,41 @@ class handler(BaseHTTPRequestHandler):
             # Decode base64 file data
             file_data = base64.b64decode(file_data_base64)
             
-            # Try to open PDF with pikepdf
+            # Try to open PDF
             try:
-                # If password provided, use it
-                if password:
-                    pdf = pikepdf.open(io.BytesIO(file_data), password=password)
-                else:
-                    # Try without password first (for restriction-only PDFs)
-                    try:
-                        pdf = pikepdf.open(io.BytesIO(file_data))
-                    except pikepdf.PasswordError:
-                        # If it needs a password, inform the user
+                # First, try to open without password
+                try:
+                    pdf = pikepdf.open(io.BytesIO(file_data))
+                    # If it opens without password, check if it's actually encrypted
+                    # (it might just have restrictions, not user password)
+                    is_encrypted = False
+                except pikepdf.PasswordError:
+                    # PDF requires a password to open
+                    is_encrypted = True
+                    
+                    if not password:
+                        # No password provided but PDF needs one
                         self.send_response(400)
                         self.send_header('Content-type', 'application/json')
                         self.end_headers()
                         self.wfile.write(json.dumps({
-                            'error': 'This PDF requires a password to open. Please enter the password.'
+                            'error': 'This PDF is password-protected. Please enter the password to unlock it.'
                         }).encode())
                         return
-            except pikepdf.PasswordError:
-                self.send_response(400)
-                self.send_header('Content-type', 'application/json')
-                self.end_headers()
-                self.wfile.write(json.dumps({
-                    'error': 'Incorrect password. Please try again.'
-                }).encode())
-                return
+                    
+                    # Try to open with provided password
+                    try:
+                        pdf = pikepdf.open(io.BytesIO(file_data), password=password)
+                    except pikepdf.PasswordError:
+                        # Wrong password
+                        self.send_response(400)
+                        self.send_header('Content-type', 'application/json')
+                        self.end_headers()
+                        self.wfile.write(json.dumps({
+                            'error': 'Incorrect password. Please try again.'
+                        }).encode())
+                        return
+                        
             except Exception as e:
                 self.send_response(500)
                 self.send_header('Content-type', 'application/json')

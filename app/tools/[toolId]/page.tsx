@@ -395,18 +395,18 @@ export default function ToolPage() {
                     {toolId === 'unlock' && (
                       <>
                         <div className="option-group">
-                          <label>Password (only if PDF requires password to open)</label>
+                          <label>Password (required for encrypted PDFs)</label>
                           <div className="password-input-wrapper">
                             <input 
                               type={showPassword ? 'text' : 'password'}
-                              placeholder="Enter password (optional)"
+                              placeholder="Enter PDF password"
                               value={options.password || ''}
                               onChange={(e) => {
                                 setOptions({...options, password: e.target.value})
                                 setUnlockError('')
                               }}
                               maxLength={300}
-                              title="Enter the password only if PDF requires it to open"
+                              title="Enter the password to unlock the PDF"
                             />
                             <button 
                               type="button"
@@ -430,10 +430,14 @@ export default function ToolPage() {
                             </div>
                           )}
                         </div>
-                        <div style={{background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: '10px', padding: '1rem', marginTop: '1rem'}}>
-                          <p style={{color: '#92400e', fontSize: '0.9rem', margin: 0}}>
-                            <i className="fas fa-info-circle"></i> This tool removes restrictions (printing, copying, editing). If the PDF requires a password to open, enter it above.
+                        <div style={{background: '#dbeafe', border: '1px solid #3b82f6', borderRadius: '10px', padding: '1rem', marginTop: '1rem'}}>
+                          <p style={{color: '#1e40af', fontSize: '0.9rem', margin: 0}}>
+                            <i className="fas fa-info-circle"></i> <strong>How it works:</strong>
                           </p>
+                          <ul style={{color: '#1e40af', fontSize: '0.85rem', marginTop: '0.5rem', marginBottom: 0, paddingLeft: '1.5rem'}}>
+                            <li>PDFs with only restrictions (no open password): Will unlock without password</li>
+                            <li>PDFs with open password: Must enter correct password to unlock</li>
+                          </ul>
                         </div>
                       </>
                     )}
