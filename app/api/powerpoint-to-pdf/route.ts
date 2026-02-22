@@ -34,7 +34,11 @@ export async function POST(request: NextRequest) {
     const command = `soffice --headless --convert-to pdf --outdir "${tempDir}" "${inputPath}"`
     
     try {
-      await execAsync(command, { timeout: 60000 }) // 60 second timeout
+      await execAsync(command, { 
+        timeout: 60000,
+        encoding: 'buffer', // Handle binary output properly
+        maxBuffer: 10 * 1024 * 1024 // 10MB buffer
+      })
     } catch (execError: any) {
       console.error('LibreOffice conversion error:', execError)
       throw new Error('Failed to convert PowerPoint to PDF. Make sure LibreOffice is installed.')
