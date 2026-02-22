@@ -21,6 +21,7 @@ export default function ToolPage() {
   const [librariesLoaded, setLibrariesLoaded] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [passwordError, setPasswordError] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const config = toolConfig[toolId]
@@ -87,6 +88,25 @@ export default function ToolPage() {
       return
     }
     
+    // Clear previous password error
+    setPasswordError('')
+    
+    // Validate passwords for protect tool
+    if (toolId === 'protect') {
+      if (!options.password) {
+        setPasswordError('Password is required to protect PDF')
+        return
+      }
+      if (options.password !== options.confirmPassword) {
+        setPasswordError('Please match the password')
+        return
+      }
+      if (options.password.length > 300) {
+        setPasswordError('Password must not exceed 300 characters')
+        return
+      }
+    }
+    
     if (toolId === 'compress' && options.targetSize) {
       const targetSize = parseInt(options.targetSize)
       if (targetSize < 30) {
@@ -144,6 +164,7 @@ export default function ToolPage() {
     setProgress(0)
     setResult(null)
     setOptions({})
+    setPasswordError('')
   }
 
   return (
@@ -306,7 +327,10 @@ export default function ToolPage() {
                               type={showPassword ? 'text' : 'password'}
                               placeholder="Enter password (max 300 characters)"
                               value={options.password || ''}
-                              onChange={(e) => setOptions({...options, password: e.target.value})}
+                              onChange={(e) => {
+                                setOptions({...options, password: e.target.value})
+                                setPasswordError('')
+                              }}
                               maxLength={300}
                               title="Password can be up to 300 characters"
                               required
@@ -327,7 +351,10 @@ export default function ToolPage() {
                               type={showConfirmPassword ? 'text' : 'password'}
                               placeholder="Confirm password"
                               value={options.confirmPassword || ''}
-                              onChange={(e) => setOptions({...options, confirmPassword: e.target.value})}
+                              onChange={(e) => {
+                                setOptions({...options, confirmPassword: e.target.value})
+                                setPasswordError('')
+                              }}
                               maxLength={300}
                               title="Password can be up to 300 characters"
                               required
@@ -340,6 +367,19 @@ export default function ToolPage() {
                               <i className={`fas ${showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                             </button>
                           </div>
+                          {passwordError && (
+                            <div style={{
+                              color: '#dc2626',
+                              fontSize: '0.875rem',
+                              marginTop: '0.5rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem'
+                            }}>
+                              <i className="fas fa-exclamation-circle"></i>
+                              {passwordError}
+                            </div>
+                          )}
                         </div>
                       </>
                     )}
