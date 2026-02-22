@@ -383,6 +383,35 @@ export default function ToolPage() {
                         </div>
                       </>
                     )}
+                    {toolId === 'unlock' && (
+                      <>
+                        <div className="option-group">
+                          <label>Password (if PDF is encrypted)</label>
+                          <div className="password-input-wrapper">
+                            <input 
+                              type={showPassword ? 'text' : 'password'}
+                              placeholder="Enter password (leave empty if not encrypted)"
+                              value={options.password || ''}
+                              onChange={(e) => setOptions({...options, password: e.target.value})}
+                              maxLength={300}
+                              title="Enter the password to unlock the PDF"
+                            />
+                            <button 
+                              type="button"
+                              className="password-toggle"
+                              onClick={() => setShowPassword(!showPassword)}
+                            >
+                              <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                            </button>
+                          </div>
+                        </div>
+                        <div style={{background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: '10px', padding: '1rem', marginTop: '1rem'}}>
+                          <p style={{color: '#92400e', fontSize: '0.9rem', margin: 0}}>
+                            <i className="fas fa-info-circle"></i> If the PDF is password-protected, enter the password above. Otherwise, leave it empty.
+                          </p>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
 
