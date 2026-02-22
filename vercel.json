@@ -1,7 +1,7 @@
 {
-  "functions": {
-    "api/protect-pdf.py": {
-      "runtime": "python@3.9"
-    }
-  }
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "cleanUrls": true,
+  "trailingSlash": false
 }
