@@ -59,11 +59,11 @@ class handler(BaseHTTPRequestHandler):
             for page in pdf_reader.pages:
                 pdf_writer.add_page(page)
             
-            # Encrypt the PDF with password
+            # Encrypt the PDF with password (PyPDF2 3.0+ syntax)
             pdf_writer.encrypt(
-                user_password=password,
-                owner_password=password,
-                algorithm="AES-256"
+                user_pwd=password,
+                owner_pwd=password,
+                use_128bit=False  # Use 256-bit encryption
             )
             
             # Write to bytes
