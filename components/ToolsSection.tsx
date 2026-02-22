@@ -68,20 +68,13 @@ export default function ToolsSection({ onToolClick, searchQuery = '' }: ToolsSec
             <p>{filteredTools.length} tool{filteredTools.length !== 1 ? 's' : ''} found</p>
           </div>
           <div className="tools-grid">
-            {filteredTools.map(tool => (
+            {filteredTools.map((tool, toolIndex) => (
               <article 
                 key={tool.id} 
                 className="tool-card" 
+                style={{ animationDelay: `${toolIndex * 0.1}s` }}
                 onClick={() => handleToolClick(tool.id)}
               >
-                {tool.badge && (
-                  <div className="tool-badge-wrapper">
-                    <span className={`tool-badge badge-${tool.badge}`}>
-                      {tool.badge === 'popular' && <><i className="fas fa-fire"></i> Popular</>}
-                      {tool.badge === 'secure' && <><i className="fas fa-shield-alt"></i> Secure</>}
-                    </span>
-                  </div>
-                )}
                 <div className={`tool-icon ${tool.iconClass}`}>
                   <i className={`fas ${tool.icon}`}></i>
                 </div>
@@ -130,14 +123,6 @@ export default function ToolsSection({ onToolClick, searchQuery = '' }: ToolsSec
                   style={{ animationDelay: `${toolIndex * 0.1}s` }}
                   onClick={() => handleToolClick(tool.id)}
                 >
-                  {tool.badge && (
-                    <div className="tool-badge-wrapper">
-                      <span className={`tool-badge badge-${tool.badge}`}>
-                        {tool.badge === 'popular' && <><i className="fas fa-fire"></i> Popular</>}
-                        {tool.badge === 'secure' && <><i className="fas fa-shield-alt"></i> Secure</>}
-                      </span>
-                    </div>
-                  )}
                   <div className={`tool-icon ${tool.iconClass}`}>
                     <i className={`fas ${tool.icon}`}></i>
                   </div>
