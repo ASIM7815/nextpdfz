@@ -11,28 +11,20 @@ export default function Hero() {
       <div className="hero-overlay"></div>
       <div className="container">
         <div className="hero-content">
-          <div className="hero-badge">Welcome to PDFZ 👋</div>
-          <h1 className="hero-title">Free Online PDF Converter & Editor - No Watermark</h1>
+          <div className="hero-badge">PDFZ</div>
+          <h1 className="hero-title">FREE PDF CONVERTER</h1>
+          <h1 className="hero-title"> No Watermark • Easy to Use</h1>
           <p className="hero-subtitle">
-            Convert PDF to Word, Excel, PowerPoint online free. Merge PDF, split PDF, compress PDF, and edit PDF securely in your browser. No watermark, works on mobile, completely free. Best alternative to Adobe Acrobat.
-          </p>
+Convert PDF to Word, Excel, PowerPoint and more in seconds. Merge, split and compress PDFs easily — fast, secure and mobile-friendly.          </p>
           <div className="hero-features">
             <div className="hero-feature-item">
               <i className="fas fa-shield-alt"></i>
-              <span>100% Secure</span>
-            </div>
-            <div className="hero-feature-item">
-              <i className="fas fa-bolt"></i>
-              <span>Lightning Fast</span>
-            </div>
-            <div className="hero-feature-item">
-              <i className="fas fa-infinity"></i>
-              <span>Unlimited Use</span>
+              <span>Files are automatically deleted after processing. We never store your documents.</span>
             </div>
           </div>
           <div className="hero-cta">
             <a onClick={() => scrollToSection('tools')} className="btn-hero-primary">
-              <i className="fas fa-rocket"></i> Get Started Free
+              <i className="fas fa-rocket"></i> Convert Now
             </a>
             <a onClick={() => scrollToSection('features')} className="btn-hero-secondary">
               <i className="fas fa-play-circle"></i> Learn More

@@ -192,11 +192,15 @@ body {
 .hero-title {
   font-size: 3.5rem;
   font-weight: 900;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.5rem;
   line-height: 1.2;
   animation: fadeInUp 0.8s ease 0.2s both, textGlow 3s ease-in-out infinite;
   text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   letter-spacing: -1px;
+}
+
+.hero-title:last-of-type {
+  margin-bottom: 1.5rem;
 }
 
 @keyframes textGlow {
@@ -221,7 +225,7 @@ body {
 
 .hero-subtitle {
   font-size: 1.25rem;
-  line-height: 1.8;
+  line-height: 1.9;
   opacity: 0.95;
   margin-bottom: 2.5rem;
   max-width: 700px;
@@ -244,11 +248,11 @@ body {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  font-size: 1rem;
+  font-size: 0.7rem;
   font-weight: 600;
   background: rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(10px);
-  padding: 0.8rem 1.5rem;
+  padding: 0.7rem 1.4rem;
   border-radius: 50px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   transition: all 0.3s;
@@ -334,11 +338,101 @@ body {
   padding: 4rem 0;
 }
 
+.tools-header {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.tools-header h2 {
+  font-size: 2.5rem;
+  color: var(--dark);
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+.tools-header p {
+  font-size: 1.1rem;
+  color: var(--text);
+  opacity: 0.8;
+}
+
+.tool-section-group {
+  margin-bottom: 5rem;
+}
+
+.tool-section-group:last-child {
+  margin-bottom: 0;
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.section-title {
+  font-size: 2rem;
+  color: var(--dark);
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+}
+
+.section-subtitle {
+  font-size: 1rem;
+  color: var(--text);
+  opacity: 0.7;
+}
+
+.search-results-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.search-results-header h2 {
+  font-size: 2rem;
+  color: var(--dark);
+  margin-bottom: 0.5rem;
+}
+
+.search-results-header p {
+  color: var(--text);
+  opacity: 0.7;
+}
+
+.no-results {
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+.no-results i {
+  font-size: 4rem;
+  color: var(--border);
+  margin-bottom: 1rem;
+}
+
+.no-results h3 {
+  font-size: 1.5rem;
+  color: var(--dark);
+  margin-bottom: 0.5rem;
+}
+
+.no-results p {
+  color: var(--text);
+  opacity: 0.7;
+}
+
 .tools-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1.5rem;
   margin-top: 2rem;
+}
+
+/* Most Popular Section - 3 cards per row */
+.popular-section .tools-grid {
+  grid-template-columns: repeat(3, 1fr);
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .tool-card {
@@ -482,6 +576,14 @@ body {
   box-shadow: 0 8px 20px rgba(5, 150, 105, 0.4);
 }
 
+/* Most Popular Section - Red Icons */
+.popular-section .tool-icon.convert,
+.popular-section .tool-icon.merge,
+.popular-section .tool-icon.compress {
+  background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+  box-shadow: 0 8px 20px rgba(220, 38, 38, 0.4) !important;
+}
+
 .tool-icon.rotate {
   background: linear-gradient(135deg, #ea580c, #dc2626);
   box-shadow: 0 8px 20px rgba(234, 88, 12, 0.4);
@@ -561,8 +663,9 @@ body {
 
 .tool-card p {
   color: var(--text);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   margin-bottom: 1rem;
+  line-height: 1.4;
 }
 
 .tool-trust-icons {
@@ -1159,6 +1262,12 @@ body {
   .tools-grid {
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 1rem;
+  }
+
+  /* Most Popular Section - Single column on mobile */
+  .popular-section .tools-grid {
+    grid-template-columns: 1fr;
+    max-width: 100%;
   }
 
   .tool-card {
