@@ -1226,7 +1226,7 @@ async function unlockPDF(file: File, options: any): Promise<Blob> {
 }
 
 async function protectPDF(file: File, options: any): Promise<Blob> {
-  const { PDFDocument, StandardFonts, rgb } = window.PDFLib
+  const { PDFDocument, rgb } = window.PDFLib
   const arrayBuffer = await file.arrayBuffer()
   const pdfDoc = await PDFDocument.load(arrayBuffer)
   
@@ -1240,7 +1240,7 @@ async function protectPDF(file: File, options: any): Promise<Blob> {
     throw new Error('Passwords do not match')
   }
   
-  // Add password as metadata and watermark
+  // Add password as metadata
   pdfDoc.setTitle('Protected Document')
   pdfDoc.setAuthor('PDFZ Protected')
   pdfDoc.setSubject(`Password: ${password}`)
@@ -1253,8 +1253,8 @@ async function protectPDF(file: File, options: any): Promise<Blob> {
     const firstPage = pages[0]
     const { width, height } = firstPage.getSize()
     
-    // Add semi-transparent protection notice
-    firstPage.drawText('🔒 Password Protected', {
+    // Add semi-transparent protection notice (using simple ASCII characters only)
+    firstPage.drawText('[Password Protected]', {
       x: width - 150,
       y: height - 30,
       size: 10,
