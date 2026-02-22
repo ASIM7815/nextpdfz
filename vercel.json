@@ -12,6 +12,10 @@
     {
       "source": "/api/unlock-pdf",
       "destination": "/api/unlock-pdf.py"
+    },
+    {
+      "source": "/api/powerpoint-to-pdf",
+      "destination": "/api/powerpoint-to-pdf.py"
     }
   ]
 }
