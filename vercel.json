@@ -5,18 +5,8 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "functions": {
-    "api/**/*.py": {
+    "api/protect-pdf.py": {
       "runtime": "python3.9"
     }
-  },
-  "rewrites": [
-    {
-      "source": "/api/protect-pdf",
-      "destination": "/api/protect-pdf.py"
-    },
-    {
-      "source": "/api/unlock-pdf",
-      "destination": "/api/unlock-pdf.py"
-    }
-  ]
+  }
 }

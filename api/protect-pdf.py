@@ -1,79 +1,64 @@
 from http.server import BaseHTTPRequestHandler
 import json
-import io
 import base64
-import pikepdf
+from io import BytesIO
+try:
+    from PyPDF2 import PdfReader, PdfWriter
+except ImportError:
+    from pypdf import PdfReader, PdfWriter
 
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
         try:
-            # Get content length
-            content_length = int(self.headers['Content-Length'])
-            
-            # Read the POST data
+            # Read request body
+            content_length = int(self.headers.get('Content-Length', 0))
             post_data = self.rfile.read(content_length)
+            body = json.loads(post_data.decode('utf-8'))
             
-            # Parse JSON data
-            data = json.loads(post_data.decode('utf-8'))
+            # Extract parameters
+            file_base64 = body.get('file')
+            password = body.get('password')
+            confirm_password = body.get('confirmPassword')
             
-            # Get file data and password
-            file_data_base64 = data.get('file')
-            password = data.get('password')
-            confirm_password = data.get('confirmPassword')
-            
-            if not file_data_base64 or not password:
-                self.send_response(400)
-                self.send_header('Content-type', 'application/json')
-                self.end_headers()
-                self.wfile.write(json.dumps({
-                    'error': 'File and password are required'
-                }).encode())
+            # Validation
+            if not file_base64 or not password:
+                self.send_error_response(400, 'File and password are required')
                 return
             
             if password != confirm_password:
-                self.send_response(400)
-                self.send_header('Content-type', 'application/json')
-                self.end_headers()
-                self.wfile.write(json.dumps({
-                    'error': 'Passwords do not match'
-                }).encode())
+                self.send_error_response(400, 'Passwords do not match')
                 return
             
             if len(password) > 300:
-                self.send_response(400)
-                self.send_header('Content-type', 'application/json')
-                self.end_headers()
-                self.wfile.write(json.dumps({
-                    'error': 'Password must not exceed 300 characters'
-                }).encode())
+                self.send_error_response(400, 'Password must not exceed 300 characters')
                 return
             
-            # Decode base64 file data
-            file_data = base64.b64decode(file_data_base64)
+            # Decode PDF file
+            pdf_data = base64.b64decode(file_base64)
+            pdf_stream = BytesIO(pdf_data)
             
-            # Open PDF with pikepdf
-            pdf = pikepdf.open(io.BytesIO(file_data))
+            # Read PDF
+            reader = PdfReader(pdf_stream)
+            writer = PdfWriter()
             
-            # Save with encryption
-            output_buffer = io.BytesIO()
-            pdf.save(
-                output_buffer,
-                encryption=pikepdf.Encryption(
-                    owner=password,
-                    user=password,
-                    R=6  # Use AES-256 encryption (strongest)
-                )
-            )
-            pdf.close()
+            # Copy all pages
+            for page in reader.pages:
+                writer.add_page(page)
             
-            encrypted_pdf = output_buffer.getvalue()
+            # Encrypt with password (256-bit AES)
+            writer.encrypt(user_password=password, owner_password=password, algorithm="AES-256")
             
-            # Encode to base64 for JSON response
-            encrypted_pdf_base64 = base64.b64encode(encrypted_pdf).decode('utf-8')
+            # Write to output stream
+            output_stream = BytesIO()
+            writer.write(output_stream)
+            output_stream.seek(0)
             
-            # Send response
+            # Encode to base64
+            encrypted_pdf_base64 = base64.b64encode(output_stream.read()).decode('utf-8')
+            
+            # Send success response
             self.send_response(200)
-            self.send_header('Content-type', 'application/json')
+            self.send_header('Content-Type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             
@@ -81,16 +66,10 @@ class handler(BaseHTTPRequestHandler):
                 'success': True,
                 'file': encrypted_pdf_base64
             }
-            
-            self.wfile.write(json.dumps(response).encode())
+            self.wfile.write(json.dumps(response).encode('utf-8'))
             
         except Exception as e:
-            self.send_response(500)
-            self.send_header('Content-type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps({
-                'error': f'An error occurred: {str(e)}'
-            }).encode())
+            self.send_error_response(500, f'An error occurred: {str(e)}')
     
     def do_OPTIONS(self):
         self.send_response(200)
@@ -98,3 +77,12 @@ class handler(BaseHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
         self.end_headers()
+    
+    def send_error_response(self, status_code, message):
+        self.send_response(status_code)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+        
+        response = {'error': message}
+        self.wfile.write(json.dumps(response).encode('utf-8'))
