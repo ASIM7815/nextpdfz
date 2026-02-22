@@ -1062,8 +1062,16 @@ async function powerPointToPDF(file: File): Promise<Blob> {
   })
   
   if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.error || 'Failed to convert PowerPoint to PDF')
+    let errorMessage = 'Failed to convert PowerPoint to PDF'
+    try {
+      const error = await response.json()
+      errorMessage = error.error || errorMessage
+    } catch {
+      // If response is not JSON, try to read as text
+      const text = await response.text()
+      errorMessage = text || errorMessage
+    }
+    throw new Error(errorMessage)
   }
   
   return await response.blob()
