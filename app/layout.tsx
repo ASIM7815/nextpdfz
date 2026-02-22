@@ -76,6 +76,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* Google Site Verification */}
+        <meta name="google-site-verification" content="_O3lEjhavcM1E7PLtfB2Jw1hCBQQ_EQVLUCtnIm0RRI" />
+        
         {/* Preconnect for faster loading */}
         <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
         <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com" />
