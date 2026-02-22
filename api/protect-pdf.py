@@ -61,7 +61,7 @@ class handler(BaseHTTPRequestHandler):
                 encryption=pikepdf.Encryption(
                     owner=password,
                     user=password,
-                    R=6  # Use AES-256 encryption
+                    R=6  # Use AES-256 encryption (strongest)
                 )
             )
             pdf.close()
