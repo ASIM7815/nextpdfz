@@ -7,6 +7,13 @@ import Footer from '@/components/Footer'
 import { toolConfig } from '@/lib/toolConfig'
 import { processFiles } from '@/lib/pdfProcessor'
 import { loadAllPDFLibraries, checkLibrariesLoaded } from '@/lib/loadScripts'
+import { 
+  checkFileSystemSupport, 
+  requestSaveFileAccess, 
+  writeFileInChunks,
+  needsChunkedProcessing 
+} from '@/lib/fileSystemStorage'
+import { ChunkProgress } from '@/lib/chunkedProcessor'
 
 export default function ToolPage() {
   const params = useParams()
@@ -23,6 +30,8 @@ export default function ToolPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [passwordError, setPasswordError] = useState('')
   const [unlockError, setUnlockError] = useState('')
+  const [chunkProgress, setChunkProgress] = useState<ChunkProgress | null>(null)
+  const [useFileSystem, setUseFileSystem] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const config = toolConfig[toolId]
@@ -92,6 +101,28 @@ export default function ToolPage() {
     // Clear previous errors
     setPasswordError('')
     setUnlockError('')
+    setChunkProgress(null)
+    
+    // Check if file is large and needs special handling
+    const file = uploadedFiles[0]
+    const isLargeFile = file && needsChunkedProcessing(file.size)
+    
+    if (isLargeFile) {
+      const fsSupport = checkFileSystemSupport()
+      if (fsSupport.supported) {
+        const userConfirm = confirm(
+          `This is a large file (${(file.size / 1024 / 1024).toFixed(2)} MB). ` +
+          `Would you like to use advanced processing for better performance? ` +
+          `This will require permission to save the file to your device.`
+        )
+        setUseFileSystem(userConfirm)
+      } else {
+        alert(
+          `This is a large file (${(file.size / 1024 / 1024).toFixed(2)} MB). ` +
+          `Processing may take longer. ${fsSupport.reason || ''}`
+        )
+      }
+    }
     
     // Validate passwords for protect tool
     if (toolId === 'protect') {
@@ -133,13 +164,18 @@ export default function ToolPage() {
     setProgress(0)
     
     const interval = setInterval(() => {
-      setProgress(p => Math.min(p + 10, 90))
-    }, 200)
+      setProgress(p => Math.min(p + 5, 85))
+    }, 500)
 
     try {
-      const blob = await processFiles(toolId, uploadedFiles, options)
+      const blob = await processFiles(toolId, uploadedFiles, options, (chunkProg) => {
+        setChunkProgress(chunkProg)
+        setProgress(chunkProg.percentage)
+      })
+      
       setResult(blob)
       setProgress(100)
+      setChunkProgress(null)
     } catch (error: any) {
       console.error('Processing error:', error)
       
@@ -155,7 +191,7 @@ export default function ToolPage() {
     }
   }
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!result) return
     
     let extension = 'pdf'
@@ -191,6 +227,29 @@ export default function ToolPage() {
     
     // Create a new blob with the correct MIME type
     const blob = new Blob([result], { type: mimeType })
+    
+    // Try File System Access API for large files
+    if (useFileSystem && checkFileSystemSupport().supported) {
+      try {
+        const fileHandle = await requestSaveFileAccess(
+          `${filename}.${extension}`,
+          mimeType,
+          `.${extension}`
+        )
+        
+        if (fileHandle) {
+          await writeFileInChunks(fileHandle, blob, (progress) => {
+            console.log(`Writing file: ${progress}%`)
+          })
+          alert('File saved successfully!')
+          return
+        }
+      } catch (error) {
+        console.error('File System Access API failed, falling back to regular download:', error)
+      }
+    }
+    
+    // Fallback to regular download
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -198,10 +257,12 @@ export default function ToolPage() {
     
     document.body.appendChild(a)
     a.click()
-    document.body.removeChild(a)
     
-    // Clean up the URL after a delay
-    setTimeout(() => URL.revokeObjectURL(url), 100)
+    // Keep anchor in DOM longer for mobile compatibility
+    setTimeout(() => {
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    }, 1000)
   }
 
   const handleReset = () => {
@@ -494,7 +555,18 @@ export default function ToolPage() {
                 <div className="progress-bar">
                   <div className="progress-fill" style={{ width: `${progress}%` }}></div>
                 </div>
-                <p className="progress-text">Processing...</p>
+                {chunkProgress ? (
+                  <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+                    <p className="progress-text">{chunkProgress.message}</p>
+                    <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '0.5rem' }}>
+                      Chunk {chunkProgress.currentChunk} of {chunkProgress.totalChunks} 
+                      {' • '}
+                      Page {chunkProgress.currentPage} of {chunkProgress.totalPages}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="progress-text">Processing...</p>
+                )}
               </div>
             )}
 

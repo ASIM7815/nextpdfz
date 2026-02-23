@@ -1,3 +1,11 @@
+import { needsChunkedProcessing } from './fileSystemStorage'
+import { 
+  processCompressPDFInChunks, 
+  processPDFToImagesInChunks,
+  processPDFToWordInChunks,
+  ChunkProgress 
+} from './chunkedProcessor'
+
 declare global {
   interface Window {
     PDFLib: any
@@ -31,13 +39,22 @@ interface PDFDocumentProxy {
   getPage(pageNumber: number): Promise<PDFPageProxy>
 }
 
-export async function processFiles(tool: string, files: File[], options: any): Promise<Blob> {
+export async function processFiles(
+  tool: string, 
+  files: File[], 
+  options: any,
+  onChunkProgress?: (progress: ChunkProgress) => void
+): Promise<Blob> {
   switch(tool) {
     case 'merge':
       return await mergePDFs(files)
     case 'split':
       return await splitPDF(files[0], options)
     case 'compress':
+      // Use chunked processing for large files
+      if (needsChunkedProcessing(files[0].size)) {
+        return await processCompressPDFInChunks(files[0], options, onChunkProgress)
+      }
       return await compressPDF(files[0], options)
     case 'rotate':
       return await rotatePDF(files[0], options)
@@ -46,8 +63,18 @@ export async function processFiles(tool: string, files: File[], options: any): P
     case 'jpg-to-pdf':
       return await imagesToPDF(files)
     case 'pdf-to-jpg':
+      // Use chunked processing for large files
+      if (needsChunkedProcessing(files[0].size)) {
+        const imageBlobs = await processPDFToImagesInChunks(files[0], options, onChunkProgress)
+        // Return array of blobs for individual downloads
+        return imageBlobs as any
+      }
       return await pdfToImages(files[0], options)
     case 'pdf-to-word':
+      // Use chunked processing for large files
+      if (needsChunkedProcessing(files[0].size)) {
+        return await processPDFToWordInChunks(files[0], onChunkProgress)
+      }
       return await pdfToWord(files[0])
     case 'word-to-pdf':
       return await wordToPDF(files[0])
@@ -371,7 +398,10 @@ async function pdfToImages(file: File, options: any): Promise<Blob> {
     zip.file(`page_${i}.jpg`, blob)
   }
   
-  return await zip.generateAsync({ type: 'blob' })
+  return await zip.generateAsync({ 
+    type: 'blob',
+    mimeType: 'application/zip'
+  })
 }
 
 async function pdfToWord(file: File): Promise<Blob> {
@@ -583,7 +613,10 @@ async function pdfToWord(file: File): Promise<Blob> {
 <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
 </Relationships>`)
   
-  return await zip.generateAsync({ type: 'blob' })
+  return await zip.generateAsync({ 
+    type: 'blob',
+    mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  })
 }
 
 // Helper function to group text items into lines
@@ -877,7 +910,10 @@ async function pdfToPowerPoint(file: File): Promise<Blob> {
 <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
 </Relationships>`)
   
-  return await zip.generateAsync({ type: 'blob' })
+  return await zip.generateAsync({ 
+    type: 'blob',
+    mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+  })
 }
 
 async function pdfToExcel(file: File): Promise<Blob> {
@@ -1046,7 +1082,10 @@ async function pdfToExcel(file: File): Promise<Blob> {
 <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
 </Relationships>`)
   
-  return await zip.generateAsync({ type: 'blob' })
+  return await zip.generateAsync({ 
+    type: 'blob',
+    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  })
 }
 
 async function excelToPDF(file: File): Promise<Blob> {
