@@ -4,11 +4,6 @@
   "framework": "nextjs",
   "cleanUrls": true,
   "trailingSlash": false,
-  "functions": {
-    "api/**/*.py": {
-      "runtime": "python3.9"
-    }
-  },
   "rewrites": [
     {
       "source": "/api/protect-pdf",
