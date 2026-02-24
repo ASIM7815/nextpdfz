@@ -4,6 +4,11 @@
   "framework": "nextjs",
   "cleanUrls": true,
   "trailingSlash": false,
+  "functions": {
+    "api/**/*.py": {
+      "runtime": "python3.9"
+    }
+  },
   "rewrites": [
     {
       "source": "/api/protect-pdf",
@@ -12,6 +17,54 @@
     {
       "source": "/api/unlock-pdf",
       "destination": "/api/unlock-pdf.py"
+    },
+    {
+      "source": "/api/merge-pdf",
+      "destination": "/api/merge-pdf.py"
+    },
+    {
+      "source": "/api/split-pdf",
+      "destination": "/api/split-pdf.py"
+    },
+    {
+      "source": "/api/compress-pdf",
+      "destination": "/api/compress-pdf.py"
+    },
+    {
+      "source": "/api/rotate-pdf",
+      "destination": "/api/rotate-pdf.py"
+    },
+    {
+      "source": "/api/pdf-to-word",
+      "destination": "/api/pdf-to-word.py"
+    },
+    {
+      "source": "/api/word-to-pdf",
+      "destination": "/api/word-to-pdf.py"
+    },
+    {
+      "source": "/api/pdf-to-excel",
+      "destination": "/api/pdf-to-excel.py"
+    },
+    {
+      "source": "/api/excel-to-pdf",
+      "destination": "/api/excel-to-pdf.py"
+    },
+    {
+      "source": "/api/pdf-to-powerpoint",
+      "destination": "/api/pdf-to-powerpoint.py"
+    },
+    {
+      "source": "/api/powerpoint-to-pdf",
+      "destination": "/api/powerpoint-to-pdf.py"
+    },
+    {
+      "source": "/api/pdf-to-jpg",
+      "destination": "/api/pdf-to-jpg.py"
+    },
+    {
+      "source": "/api/jpg-to-pdf",
+      "destination": "/api/jpg-to-pdf.py"
     }
   ]
 }

@@ -1,8 +1,6 @@
 import { toolConfig } from '@/lib/toolConfig'
 
-export const config = {
-  amp: true,
-}
+export const runtime = 'edge'
 
 export default function AmpPage() {
   const tools = Object.entries(toolConfig)
