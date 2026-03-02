@@ -63,9 +63,6 @@ export default function RootLayout({
         {/* Google Site Verification */}
         <meta name="google-site-verification" content="_O3lEjhavcM1E7PLtfB2Jw1hCBQQ_EQVLUCtnIm0RRI" />
         
-        {/* AMP Version */}
-        <link rel="amphtml" href="https://pdfz.asimsaad.com/amp" />
-        
         {/* Preconnect for faster loading */}
         <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
         <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com" />
