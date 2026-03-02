@@ -12,8 +12,7 @@ export default function Hero() {
       <div className="container">
         <div className="hero-content">
           <div className="hero-badge">PDFZ</div>
-          <h1 className="hero-title">FREE PDF CONVERTER</h1>
-          <h1 className="hero-title"> No Watermark • Easy to Use</h1>
+          <h1 className="hero-title">FREE PDF CONVERTER - No Watermark • Easy to Use</h1>
           <p className="hero-subtitle">
 Convert PDF to Word, Excel, PowerPoint and more in seconds. Merge, split and compress PDFs easily — fast, secure and mobile-friendly.          </p>
           <div className="hero-features">

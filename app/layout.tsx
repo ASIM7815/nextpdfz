@@ -15,39 +15,12 @@ const poppins = Poppins({
 
 export const metadata: Metadata = {
   title: 'Free PDF Tools Online - Convert, Merge, Split, Compress PDF | PDFZ',
-  description: 'Free online PDF converter and editor. Convert PDF to Word, Excel, PPT. Merge PDF, split PDF, compress PDF, rotate PDF. No watermark, secure, works on mobile. Best free alternative to Adobe Acrobat.',
+  description: 'Free PDF tools online - Convert PDF to Word, Excel, PPT. Merge, split, compress PDF. No watermark, secure, mobile-friendly.',
   icons: {
     icon: '/favicon.svg',
     apple: '/apple-touch-icon.png',
   },
-  keywords: [
-    // Conversion tools
-    'pdf to word', 'word to pdf', 'pdf to jpg', 'jpg to pdf', 'pdf to excel', 'excel to pdf', 'pdf to ppt', 'ppt to pdf',
-    'document converter online', 'free file converter', 'convert document online', 'online pdf converter free',
-    'convert pdf to word editable', 'pdf to docx free no watermark', 'best pdf to word converter online',
-    'convert scanned pdf to word', 'pdf to word without losing formatting', 'pdf to word under 1mb', 'pdf to word fast free',
-    // Editing tools
-    'edit pdf online', 'add text to pdf', 'sign pdf online', 'annotate pdf free', 'fill pdf form online', 'type on pdf without printing',
-    'how to edit pdf without adobe acrobat', 'how to sign pdf digitally free',
-    // Organizing tools
-    'merge pdf', 'split pdf', 'rearrange pdf pages', 'delete pages from pdf', 'extract pages from pdf', 'rotate pdf pages',
-    'combine pdf files into one', 'merge pdf in order online', 'join pdf pages free', 'merge pdf without limit',
-    'split pdf into single pages', 'extract pages from pdf online', 'split pdf by page numbers', 'separate pdf chapters',
-    'how to combine screenshots into one pdf',
-    // Optimization tools
-    'compress pdf', 'reduce pdf file size', 'make pdf smaller', 'optimize pdf for email', 'pdf compressor online free',
-    'compress pdf to 200kb', 'compress pdf for whatsapp', 'compress pdf for email attachment',
-    'reduce pdf size below 100kb', 'compress pdf without losing quality', 'compress pdf for upload form',
-    'how to reduce pdf size for job application', 'how to send large pdf on whatsapp',
-    'how to make notes pdf smaller', 'how to upload pdf less than 500kb in form',
-    // Security tools
-    'protect pdf with password', 'unlock pdf', 'remove password from pdf', 'encrypt pdf', 'decrypt pdf online',
-    // Image tools
-    'image to pdf converter free', 'photos to pdf in order', 'multiple images to pdf', 'scan to pdf online', 'png to pdf high quality',
-    // General
-    'free pdf tools', 'online pdf editor', 'pdf converter', 'best free alternative to adobe acrobat',
-    'how to convert pdf to word in mobile without app', 'why pdf file size increases after scanning'
-  ].join(', '),
+  keywords: 'pdf to word, word to pdf, merge pdf, split pdf, compress pdf, pdf to excel, pdf to jpg, free pdf tools',
   authors: [{ name: 'PDFZ' }],
   robots: 'index, follow',
   openGraph: {
@@ -57,6 +30,14 @@ export const metadata: Metadata = {
     url: 'https://pdfz.asimsaad.com/',
     siteName: 'PDFZ',
     locale: 'en_US',
+    images: [
+      {
+        url: 'https://pdfz.asimsaad.com/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'PDFZ - Free PDF Tools Online',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
