@@ -1,19 +1,15 @@
-import { toolConfig } from '@/lib/toolConfig'
-
 export const runtime = 'edge'
 
 export default function AmpPage() {
-  const tools = Object.entries(toolConfig)
-
   return (
-    <html lang="en">
+    <html amp="" lang="en">
       <head>
         <meta charSet="utf-8" />
         <script async src="https://cdn.ampproject.org/v0.js"></script>
         <title>PDFZ - Free Online PDF Tools | Convert, Merge, Split & Edit PDFs</title>
         <link rel="canonical" href="https://pdfz.asimsaad.com/" />
         <meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1" />
-        <meta name="description" content="Free online PDF tools. Convert, merge, split, compress, edit, unlock, protect and more. Fast, secure, and easy to use PDF utilities." />
+        <meta name="description" content="Free PDF tools online - Convert PDF to Word, Excel, PPT. Merge, split, compress PDF. No watermark, secure, mobile-friendly." />
         <style amp-boilerplate="">{`body{-webkit-animation:-amp-start 8s steps(1,end) 0s 1 normal both;-moz-animation:-amp-start 8s steps(1,end) 0s 1 normal both;-ms-animation:-amp-start 8s steps(1,end) 0s 1 normal both;animation:-amp-start 8s steps(1,end) 0s 1 normal both}@-webkit-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@-moz-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@-ms-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@-o-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}`}</style>
         <noscript>
           <style amp-boilerplate="">{`body{-webkit-animation:none;-moz-animation:none;-ms-animation:none;animation:none}`}</style>
@@ -126,52 +122,89 @@ export default function AmpPage() {
       </head>
       <body>
         <header>
-          <div className="container">
-            <div className="logo">PDFZ</div>
+          <div class="container">
+            <div class="logo">PDFZ</div>
           </div>
         </header>
 
-        <section className="hero">
-          <div className="container">
+        <section class="hero">
+          <div class="container">
             <h1>FREE PDF CONVERTER</h1>
-            <p className="subtitle">
+            <p class="subtitle">
               Convert PDF to Word, Excel, PowerPoint and more in seconds. Merge, split and compress PDFs easily — fast, secure and mobile-friendly.
             </p>
-            <div className="hero-feature">
-              🛡️ Files are automatically deleted after processing. We never store your documents.
+            <div class="hero-feature">
+              Files are automatically deleted after processing. We never store your documents.
             </div>
-            <a href="https://pdfz.asimsaad.com/" className="cta-button">Convert Now</a>
+            <a href="https://pdfz.asimsaad.com/" class="cta-button">Convert Now</a>
           </div>
         </section>
 
-        <section className="container">
-          <div className="tools-grid">
-            {tools.map(([key, tool]) => (
-              <div key={key} className="tool-card">
-                <h3 className="tool-title">{tool.title}</h3>
-              </div>
-            ))}
+        <section class="container">
+          <div class="tools-grid">
+            <div class="tool-card">
+              <h3 class="tool-title">PDF to Word</h3>
+            </div>
+            <div class="tool-card">
+              <h3 class="tool-title">Word to PDF</h3>
+            </div>
+            <div class="tool-card">
+              <h3 class="tool-title">Merge PDF</h3>
+            </div>
+            <div class="tool-card">
+              <h3 class="tool-title">Split PDF</h3>
+            </div>
+            <div class="tool-card">
+              <h3 class="tool-title">Compress PDF</h3>
+            </div>
+            <div class="tool-card">
+              <h3 class="tool-title">PDF to Excel</h3>
+            </div>
+            <div class="tool-card">
+              <h3 class="tool-title">Excel to PDF</h3>
+            </div>
+            <div class="tool-card">
+              <h3 class="tool-title">PDF to PowerPoint</h3>
+            </div>
+            <div class="tool-card">
+              <h3 class="tool-title">PowerPoint to PDF</h3>
+            </div>
+            <div class="tool-card">
+              <h3 class="tool-title">PDF to JPG</h3>
+            </div>
+            <div class="tool-card">
+              <h3 class="tool-title">JPG to PDF</h3>
+            </div>
+            <div class="tool-card">
+              <h3 class="tool-title">Rotate PDF</h3>
+            </div>
+            <div class="tool-card">
+              <h3 class="tool-title">Protect PDF</h3>
+            </div>
+            <div class="tool-card">
+              <h3 class="tool-title">Unlock PDF</h3>
+            </div>
           </div>
         </section>
 
-        <section className="features">
-          <div className="container">
+        <section class="features">
+          <div class="container">
             <h2>Why choose PDFZ?</h2>
-            <div className="feature-grid">
-              <div className="feature-item">
-                <h3>⚡ Lightning Fast</h3>
+            <div class="feature-grid">
+              <div class="feature-item">
+                <h3>Lightning Fast</h3>
                 <p>Process files in seconds</p>
               </div>
-              <div className="feature-item">
-                <h3>🔒 Secure</h3>
+              <div class="feature-item">
+                <h3>Secure</h3>
                 <p>Files deleted after 1 hour</p>
               </div>
-              <div className="feature-item">
-                <h3>📱 Mobile Friendly</h3>
+              <div class="feature-item">
+                <h3>Mobile Friendly</h3>
                 <p>Works on any device</p>
               </div>
-              <div className="feature-item">
-                <h3>❤️ Free Forever</h3>
+              <div class="feature-item">
+                <h3>Free Forever</h3>
                 <p>No hidden charges</p>
               </div>
             </div>
@@ -179,8 +212,8 @@ export default function AmpPage() {
         </section>
 
         <footer>
-          <div className="container">
-            <p>&copy; 2024 PDFZ. All rights reserved.</p>
+          <div class="container">
+            <p>2024 PDFZ. All rights reserved.</p>
             <p>Free online PDF tools for everyone</p>
           </div>
         </footer>
