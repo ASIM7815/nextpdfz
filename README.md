@@ -18,29 +18,31 @@ A modern PDF manipulation tool built with Next.js and Python serverless function
 - **Frontend**: Next.js 14, React 18, TypeScript
 - **Backend**: Python serverless functions
 - **PDF Processing**: PyPDF2, pypdf
-- **Deployment**: Vercel
+- **Deployment**: Netlify
 
-## Deploy to Vercel
+## Deploy to Netlify
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/ASIM7815/nextpdfz)
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/ASIM7815/nextpdfz)
 
 ### Manual Deployment Steps
 
-1. **Install Vercel CLI** (optional):
+1. **Install Netlify CLI** (optional):
    ```bash
-   npm install -g vercel
+   npm install -g netlify-cli
    ```
 
 2. **Deploy via GitHub**:
-   - Go to [vercel.com](https://vercel.com)
-   - Click "New Project"
-   - Import your GitHub repository: `ASIM7815/nextpdfz`
-   - Vercel will auto-detect Next.js configuration
-   - Click "Deploy"
+   - Go to [app.netlify.com](https://app.netlify.com)
+   - Click "Add new site" → "Import an existing project"
+   - Connect to GitHub and select: `ASIM7815/nextpdfz`
+   - Build settings (auto-detected):
+     - Build command: `npm run build`
+     - Publish directory: `.next`
+   - Click "Deploy site"
 
 3. **Deploy via CLI**:
    ```bash
-   vercel
+   netlify deploy --prod
    ```
 
 ### Environment Variables
@@ -77,9 +79,10 @@ nextpdfz/
 │   └── page.tsx           # Home page
 ├── components/            # React components
 ├── lib/                   # Utility libraries
-├── api/                   # Python serverless functions
+├── netlify/
+│   └── functions/         # Python serverless functions
 ├── public/                # Static assets
-└── vercel.json           # Vercel configuration
+└── netlify.toml          # Netlify configuration
 ```
 
 ## API Endpoints
