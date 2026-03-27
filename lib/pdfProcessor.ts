@@ -1205,6 +1205,7 @@ async function htmlToPDF(file: File): Promise<Blob> {
 }
 
 async function unlockPDF(file: File, options: any): Promise<Blob> {
+  const { PDFDocument } = window.PDFLib
   const password = options.password || ''
   
   // Validate password is provided
@@ -1212,45 +1213,29 @@ async function unlockPDF(file: File, options: any): Promise<Blob> {
     throw new Error('Password is required to unlock the PDF')
   }
   
-  // Convert file to base64
-  const arrayBuffer = await file.arrayBuffer()
-  const base64 = btoa(
-    new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
-  )
-
-  // Call API endpoint
-  const response = await fetch('/api/unlock-pdf', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      file: base64,
-      password: password
+  try {
+    // Load PDF with password
+    const arrayBuffer = await file.arrayBuffer()
+    const pdfDoc = await PDFDocument.load(arrayBuffer, { 
+      password: password,
+      ignoreEncryption: false 
     })
-  })
-
-  const result = await response.json()
-
-  if (!response.ok) {
-    throw new Error(result.error || 'Failed to unlock PDF')
+    
+    // Save without encryption
+    const pdfBytes = await pdfDoc.save()
+    return new Blob([pdfBytes], { type: 'application/pdf' })
+    
+  } catch (error: any) {
+    // Handle specific error cases
+    if (error.message && (error.message.includes('password') || error.message.includes('encrypted') || error.message.includes('decrypt'))) {
+      throw new Error('Incorrect password. Please try again.')
+    }
+    throw new Error('Failed to unlock PDF: ' + (error.message || 'Unknown error'))
   }
-
-  if (!result.success || !result.file) {
-    throw new Error('Invalid response from server')
-  }
-
-  // Convert base64 back to blob
-  const binaryString = atob(result.file)
-  const bytes = new Uint8Array(binaryString.length)
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i)
-  }
-
-  return new Blob([bytes], { type: 'application/pdf' })
 }
 
 async function protectPDF(file: File, options: any): Promise<Blob> {
+  const { PDFDocument } = window.PDFLib
   const password = options.password || ''
   
   if (!password) {
@@ -1265,40 +1250,31 @@ async function protectPDF(file: File, options: any): Promise<Blob> {
     throw new Error('Password must not exceed 300 characters')
   }
 
-  // Convert file to base64
-  const arrayBuffer = await file.arrayBuffer()
-  const base64 = btoa(
-    new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
-  )
-
-  // Call API endpoint
-  const response = await fetch('/api/protect-pdf', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      file: base64,
-      password: password,
-      confirmPassword: options.confirmPassword
-    }),
-  })
-
-  if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.error || 'Failed to protect PDF')
+  try {
+    // Load the PDF
+    const arrayBuffer = await file.arrayBuffer()
+    const pdfDoc = await PDFDocument.load(arrayBuffer)
+    
+    // Save with encryption
+    const pdfBytes = await pdfDoc.save({
+      userPassword: password,
+      ownerPassword: password,
+      permissions: {
+        printing: 'highResolution',
+        modifying: false,
+        copying: false,
+        annotating: true,
+        fillingForms: true,
+        contentAccessibility: true,
+        documentAssembly: false
+      }
+    })
+    
+    return new Blob([pdfBytes], { type: 'application/pdf' })
+    
+  } catch (error: any) {
+    throw new Error('Failed to protect PDF: ' + (error.message || 'Unknown error'))
   }
-
-  const result = await response.json()
-  
-  // Decode base64 response back to blob
-  const binaryString = atob(result.file)
-  const bytes = new Uint8Array(binaryString.length)
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i)
-  }
-  
-  return new Blob([bytes], { type: 'application/pdf' })
 }
 
 async function pdfToPDFA(file: File): Promise<Blob> {

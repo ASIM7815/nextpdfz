@@ -108,6 +108,24 @@ export default function ToolModal({ currentTool, onClose }: ToolModalProps) {
       }
     }
     
+    // Validate protect PDF passwords match
+    if (currentTool === 'protect') {
+      if (!options.password) {
+        alert('Password is required to protect PDF')
+        return
+      }
+      if (options.password !== options.confirmPassword) {
+        alert('Passwords do not match!')
+        return
+      }
+    }
+    
+    // Validate unlock PDF password provided
+    if (currentTool === 'unlock' && !options.password) {
+      alert('Password is required to unlock the PDF')
+      return
+    }
+    
     setProcessing(true)
     setProgress(0)
     
@@ -119,9 +137,11 @@ export default function ToolModal({ currentTool, onClose }: ToolModalProps) {
       const blob = await processFiles(currentTool, uploadedFiles, options)
       setResult(blob)
       setProgress(100)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Processing error:', error)
-      alert('An error occurred while processing your files. Please try again.')
+      // Show the actual error message from processing
+      const errorMessage = error.message || 'An error occurred while processing your files. Please try again.'
+      alert(errorMessage)
     } finally {
       clearInterval(interval)
       setProcessing(false)
