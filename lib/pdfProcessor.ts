@@ -1235,7 +1235,6 @@ async function unlockPDF(file: File, options: any): Promise<Blob> {
 }
 
 async function protectPDF(file: File, options: any): Promise<Blob> {
-  const { PDFDocument } = window.PDFLib
   const password = options.password || ''
   
   if (!password) {
@@ -1251,26 +1250,43 @@ async function protectPDF(file: File, options: any): Promise<Blob> {
   }
 
   try {
-    // Load the PDF
+    // Convert file to base64
     const arrayBuffer = await file.arrayBuffer()
-    const pdfDoc = await PDFDocument.load(arrayBuffer)
-    
-    // Save with encryption
-    const pdfBytes = await pdfDoc.save({
-      userPassword: password,
-      ownerPassword: password,
-      permissions: {
-        printing: 'highResolution',
-        modifying: false,
-        copying: false,
-        annotating: true,
-        fillingForms: true,
-        contentAccessibility: true,
-        documentAssembly: false
-      }
+    const base64 = btoa(
+      new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+    )
+
+    // Call API endpoint
+    const response = await fetch('/api/protect-pdf', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        file: base64,
+        password: password,
+        confirmPassword: options.confirmPassword
+      }),
     })
-    
-    return new Blob([pdfBytes], { type: 'application/pdf' })
+
+    const result = await response.json()
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to protect PDF')
+    }
+
+    if (!result.success || !result.file) {
+      throw new Error('Invalid response from server')
+    }
+
+    // Convert base64 back to blob
+    const binaryString = atob(result.file)
+    const bytes = new Uint8Array(binaryString.length)
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i)
+    }
+
+    return new Blob([bytes], { type: 'application/pdf' })
     
   } catch (error: any) {
     throw new Error('Failed to protect PDF: ' + (error.message || 'Unknown error'))
