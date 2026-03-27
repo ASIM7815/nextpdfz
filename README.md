@@ -18,32 +18,34 @@ A modern PDF manipulation tool built with Next.js and Python serverless function
 - **Frontend**: Next.js 14, React 18, TypeScript
 - **Backend**: Python serverless functions
 - **PDF Processing**: PyPDF2, pypdf
-- **Deployment**: Netlify
+- **Deployment**: Vercel
 
-## Deploy to Netlify
+## Deploy to Vercel
 
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/ASIM7815/nextpdfz)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/ASIM7815/nextpdfz)
 
 ### Manual Deployment Steps
 
-1. **Install Netlify CLI** (optional):
+1. **Deploy via Vercel Dashboard**:
+   - Go to [vercel.com](https://vercel.com)
+   - Sign in with your GitHub account
+   - Click "New Project"
+   - Import your GitHub repository: `ASIM7815/nextpdfz`
+   - Vercel will auto-detect Next.js and Python functions
+   - Click "Deploy"
+
+2. **Deploy via Vercel CLI**:
    ```bash
-   npm install -g netlify-cli
+   npm install -g vercel
+   vercel
    ```
 
-2. **Deploy via GitHub**:
-   - Go to [app.netlify.com](https://app.netlify.com)
-   - Click "Add new site" → "Import an existing project"
-   - Connect to GitHub and select: `ASIM7815/nextpdfz`
-   - Build settings (auto-detected):
-     - Build command: `npm run build`
-     - Publish directory: `.next`
-   - Click "Deploy site"
+### Configuration
 
-3. **Deploy via CLI**:
-   ```bash
-   netlify deploy --prod
-   ```
+- **Framework**: Next.js (auto-detected)
+- **Build Command**: `npm run build` (auto-detected)
+- **Output Directory**: `.next` (auto-detected)
+- **Python Runtime**: Python 3.9 (auto-detected for `/api/*.py`)
 
 ### Environment Variables
 
@@ -74,15 +76,15 @@ No environment variables are required for basic functionality.
 ```
 nextpdfz/
 ├── app/                    # Next.js app directory
-│   ├── api/               # Next.js API routes
+│   ├── api/               # Next.js API routes (TypeScript)
 │   ├── tools/             # Tool pages
 │   └── page.tsx           # Home page
 ├── components/            # React components
 ├── lib/                   # Utility libraries
-├── netlify/
-│   └── functions/         # Python serverless functions
+├── api/                   # Python serverless functions
 ├── public/                # Static assets
-└── netlify.toml          # Netlify configuration
+├── vercel.json           # Vercel configuration
+└── requirements.txt      # Python dependencies
 ```
 
 ## API Endpoints
@@ -105,6 +107,13 @@ All PDF processing endpoints are available at `/api/*`:
 - `/api/jpg-to-pdf` - Convert JPG to PDF
 - `/api/organize-pdf` - Organize PDF pages
 - `/api/repair-pdf` - Repair corrupted PDFs
+
+## How It Works
+
+- **Frontend**: Next.js handles the UI and routing
+- **Python Functions**: Each `/api/*.py` file is automatically deployed as a serverless function
+- **Vercel Runtime**: Automatically detects Python files and uses Python 3.9 runtime
+- **Dependencies**: `requirements.txt` is automatically installed for Python functions
 
 ## License
 
