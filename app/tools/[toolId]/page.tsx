@@ -286,7 +286,19 @@ export default function ToolPage() {
             </button>
             <div className="tool-page-title">
               <div className={`tool-icon ${config.icon}`}>
-                <i className={`fas fa-${config.icon === 'merge' ? 'object-group' : config.icon === 'split' ? 'scissors' : 'file-pdf'}`}></i>
+                <i className={`fas fa-${
+                  config.icon === 'merge' ? 'object-group' : 
+                  config.icon === 'split' ? 'scissors' : 
+                  config.icon === 'compress' ? 'compress' :
+                  config.icon === 'rotate' ? 'sync' :
+                  config.icon === 'unlock' ? 'unlock' :
+                  config.icon === 'protect' ? 'lock' :
+                  config.icon === 'convert' ? 'exchange-alt' :
+                  config.icon === 'edit' ? 'edit' :
+                  config.icon === 'sign' ? 'signature' :
+                  config.icon === 'watermark' ? 'tint' :
+                  'file-pdf'
+                }`}></i>
               </div>
               <h1>{config.title}</h1>
             </div>
