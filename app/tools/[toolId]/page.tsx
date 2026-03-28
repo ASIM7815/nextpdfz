@@ -225,6 +225,44 @@ export default function ToolPage() {
       filename = `${nameWithoutExt}pdfz`
     }
     
+    // If it's a ZIP file (pdf-to-jpg), extract and download individual files
+    if (extension === 'zip') {
+      try {
+        const JSZip = (await import('jszip')).default
+        const zip = new JSZip()
+        const zipContent = await zip.loadAsync(result)
+        
+        // Get all files from the ZIP
+        const files = Object.keys(zipContent.files).filter(name => !zipContent.files[name].dir)
+        
+        // Download each file individually
+        for (let i = 0; i < files.length; i++) {
+          const fileName = files[i]
+          const fileData = await zipContent.files[fileName].async('blob')
+          
+          // Create download link for each file
+          const url = URL.createObjectURL(fileData)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = fileName
+          
+          document.body.appendChild(a)
+          a.click()
+          
+          // Small delay between downloads to prevent browser blocking
+          await new Promise(resolve => setTimeout(resolve, 100))
+          
+          document.body.removeChild(a)
+          URL.revokeObjectURL(url)
+        }
+        
+        return
+      } catch (error) {
+        console.error('Failed to extract ZIP, downloading as ZIP file:', error)
+        // Fall through to regular download if extraction fails
+      }
+    }
+    
     // Create a new blob with the correct MIME type
     const blob = new Blob([result], { type: mimeType })
     
